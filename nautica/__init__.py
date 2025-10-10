@@ -11,6 +11,9 @@ Running Nautica v{_release}
 
 
 from .services.logger import Logger, LogLevel
+from .services.config import ConfigManager
 
 logger = Logger("Nautica.Core")
-logger.info("Initializing core")
+logger.info("Logging manager initialized")
+
+Config = ConfigManager("nautica.config.json")
