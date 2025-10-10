@@ -1,2 +1,8 @@
-# nautica-api
-A Framework for writing backend code in python, fast.
+# Nautica API
+
+## Features
+| Feature             | Status     |
+|---------------------|------------|
+| HTTP Server         | planned    |
+| SocketIO Server     | planned    |
+| WebSocket Server    | planned    |
