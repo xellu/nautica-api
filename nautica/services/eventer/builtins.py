@@ -30,4 +30,19 @@ def crash_shutdown(reason: str = None):
     logger.critical(f"Exit Message: {reason}")
     os._exit(1)
     
-#TODO: make a normal shutdown sequence
+# Clean shutdown
+@Core.Eventer.on("shutdown")
+def shutdown(reason: str = None):
+    logger.info(f"Shutdown requested ({reason or 'No reason provided'})")
+
+    # Stop services
+    # services = Core.ServiceManager.getAllServices()
+    # for service in services:
+    #     if service.isRunning():
+    #         logger.info(f"Stopping service {service.name}...")
+    #         service.stop()
+    #         logger.info("All services stopped")
+
+    logger.info("Shutdown complete")
+
+    os._exit(0)

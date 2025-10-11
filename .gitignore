@@ -5,7 +5,10 @@ __pycache__/
 
 # C extensions
 *.so
+
+#other
 .logs/
+*.config.json
 
 # Distribution / packaging
 .Python

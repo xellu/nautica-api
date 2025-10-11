@@ -5,6 +5,7 @@ import os
 from ..logger import LogManager
 from ...ext.static import NauticaConfigTemplate
 from ...instances import ConfigManInstances
+from .helper import SubConfig
 
 logger = LogManager("Nautica.Services.Config")
 
@@ -76,4 +77,15 @@ class ConfigManager:
         if not path:
             raise LookupError(f"Unable to find '{configId}' in configs, is it registered?")
         
+        template_path = os.path.join("src", "assets", path)
+        template = {}
+        
+        template = json.loads(
+            open(template_path, "r", encoding="utf-8").read()
+        )
+        
+        return SubConfig(
+            path = path,
+            template = template
+        )
         

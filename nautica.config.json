@@ -21,7 +21,7 @@
     },
     "services": {
         "config": {
-            "example": "example.config.json"
+            "example": "example.template.json"
         }
     }
 }

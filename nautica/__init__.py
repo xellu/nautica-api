@@ -20,4 +20,5 @@ class Core:
    Config = ConfigManager()
    
 Core.Logger.info("Initializing Nautica Core")
-Core.Logger.info(f"Example Config: {Core.Config('example')}")
+Core.Config("example")["oauth.discord.publicKey"] = "test123"
+Core.Logger.info(f"Example Config: {Core.Config('example')['oauth.discord']}")
