@@ -1,0 +1,24 @@
+{
+    "servers": {
+        "http": {
+            "enabled": true,
+            "host": "0.0.0.0",
+            "port": 8100
+        },
+        "io": {
+            "enabled": true,
+            "host": "0.0.0.0",
+            "port": 8200
+        },
+        "ws": {
+            "enabled": true,
+            "host": "0.0.0.0",
+            "port": 8300
+        }
+    },
+    "services": {
+        "config": {
+            "example": "example.config.json"
+        }
+    }
+}

@@ -2,34 +2,47 @@
 import json
 import os
 
-from ...shared import EventBus, ConfigManInstances
-from ..logger import Logger
+from ..logger import LogManager
+from ...ext.static import NauticaConfigTemplate
 
-logger = Logger("Nautica.Services.Config")
+logger = LogManager("Nautica.Services.Config")
 
 class ConfigManager:
-    def __init__(self, path, preset = None):
-        self.path = path
+    def __init__(self):
+        self.masterCfg = {}
         
-        self.data = {}
-        self.preset = preset if preset else {}
-        
-        self.load() 
-        
-        ConfigManInstances.append(self)
-        
-    def load(self):
-        try:
-            if not os.path.exists(self.path):
-                os.makedirs(os.path.basename(self.path), exist_ok=True)
-                with open(self.path, "w", encoding="utf-8") as f:
-                    f.write(json.dumps(self.template, indent=4))
-                    
-                Logger.ok(f"Created missing config file at '{self.path}'")
+        if "nautica.config.json" not in os.listdir("."):
+            logger.warn("Framework configuration file 'nautica.config.json' was not found")
             
-            self.data = json.loads(
-                open(self.path, "r", encoding="utf-8").read()
-            )
-        except Exception as e:
-            pass
+            f = open("nautica.config.json", "w", encoding="utf-8")
+            f.write(json.dumps(NauticaConfigTemplate, indent=4))
+            f.close()
             
+            logger.ok("Framework configuration file created")
+            
+        self.masterCfg = json.loads(
+            open("nautica.config.json", "r", encoding="utf-8").read()
+        )
+        
+        if self.getMissingKeys(self.masterCfg, NauticaConfigTemplate):
+            raise KeyError(f"Found missing keys in 'nautica.config.json', which are required for framework functionality: {', '.join(self.getMissingKeys(self.masterCfg, NauticaConfigTemplate))}")
+            
+    def getMissingKeys(self, source: dict, template: dict, rel_path: list[str] | None = None):
+        rel_path = rel_path if isinstance(rel_path, list) else [] 
+        #^ used to identify what key is missing if nested 
+        #e.g.: {"hello": {"world": {"test": "hai"}}} -> if hello.world.test2 is missing it'll show up as 'hello.world.test2' and not test2 (has context)
+        if not isinstance(source, dict):
+            return [".".join(rel_path) + " (not a dict)"]
+        
+        missing = []
+        
+        for k, v in template.items():
+            cur_path = rel_path.copy() + [k]
+            
+            if k not in source.keys():
+                missing.append(".".join(cur_path))
+            
+            if isinstance(v, dict):
+                missing += self.getMissingKeys(source.get(k), v, rel_path=cur_path)
+
+        return missing

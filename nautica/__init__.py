@@ -10,10 +10,12 @@ Running Nautica v{_release}
 {Fore.RESET}""")
 
 
-from .services.logger import Logger, LogLevel
+from .services.logger import LogManager, LogLevel
 from .services.config import ConfigManager
+from .services.eventer import EventManager
 
-logger = Logger("Nautica.Core")
-logger.info("Logging manager initialized")
-
-Config = ConfigManager("nautica.config.json")
+from .ext.static import NauticaConfigTemplate
+class Core:
+   Logger = LogManager("Nautica.Core")
+   Eventer = EventManager()
+   Config = ConfigManager()

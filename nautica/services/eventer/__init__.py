@@ -1,6 +1,6 @@
 import asyncio
 
-class Eventer:
+class EventManager:
     def __init__(self, bounce: bool = False):
         """
         A class representing an event system manager.
@@ -13,9 +13,6 @@ class Eventer:
             #"start": [func1, func2, func3],
         }
         self.globals = []
-        
-        from ...shared import EventerInstances
-        EventerInstances.append(self)
 
     def on(self, event: str):
         """
@@ -108,7 +105,7 @@ class Eventer:
         return True
     emit_async = signal_async
 
-    def dettach(self, event: str, func):
+    def detach(self, event: str, func):
         """
         Remove an event listener.
 

@@ -5,7 +5,7 @@ import os
 import time
 from colorama import Fore
 
-class Logger:
+class LogManager:
     def __init__(self, name: str, level: LogLevel = LogLevel.ALL):
         """
         Nautica's Logging Manager

@@ -8,6 +8,7 @@
 | WebSocket Server    | planned    |
 
 ## App structure
+```
 src
 |
 |-routes
@@ -17,8 +18,10 @@ src
 |   |-... (should match the `nautica/servers` dir)
 |
 |-lib (yk shared code nebo neco, jak ve svelte)
+```
 
 ## Project Structure
+```
 nautica
 |
 |-servers
@@ -42,6 +45,7 @@ nautica
 |-runner
 |   |-preprocessor
 |   |-runtime
+```
 
 taklze jak to bude fungovat bro:
 1. preprocessor scanne vsechny files a:
