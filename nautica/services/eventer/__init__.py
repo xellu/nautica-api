@@ -1,8 +1,6 @@
 import asyncio
 from ...instances import EventManInstances
 
-import builtins
-
 class EventManager:
     def __init__(self, bounce: bool = False):
         """

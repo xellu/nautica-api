@@ -34,6 +34,7 @@ def crash_shutdown(reason: str = None):
 @Core.Eventer.on("shutdown")
 def shutdown(reason: str = None):
     logger.info(f"Shutdown requested ({reason or 'No reason provided'})")
+    logger.info("Stopping services. Use 'stop --force' if it is stuck")
 
     # Stop services
     # services = Core.ServiceManager.getAllServices()
@@ -43,6 +44,6 @@ def shutdown(reason: str = None):
     #         service.stop()
     #         logger.info("All services stopped")
 
-    logger.info("Shutdown complete")
+    logger.ok("Shutdown complete")
 
     os._exit(0)
