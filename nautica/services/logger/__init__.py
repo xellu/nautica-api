@@ -3,6 +3,7 @@ from .levels import LogLevel, LevelColors
 
 import os
 import time
+import traceback
 from colorama import Fore
 
 class LogManager:
@@ -51,27 +52,55 @@ class LogManager:
             f.flush()
         
     def info(self, message: str, *args, **kwargs):
-        self.log(message, LogLevel.INFO, *args, **kwargs)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.INFO, *args, **kwargs)
     
     def warn(self, message: str, *args, **kwargs):
-        self.log(message, LogLevel.WARN, *args, **kwargs)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.WARN, *args, **kwargs)
     warning = warn
     
     def error(self, message: str, *args, **kwargs):
-        self.log(message, LogLevel.ERROR, *args, **kwargs)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.ERROR, *args, **kwargs)
     
     def debug(self, message: str, *args, **kwargs):
-        self.log(message, LogLevel.DEBUG, *args, **kwargs)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.DEBUG, *args, **kwargs)
     
     def critical(self, message: str, *args, **kwargs):
-        self.log(message, LogLevel.CRITICAL, *args, **kwargs)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.CRITICAL, *args, **kwargs)
     fatal = critical
 
-    def trace(self, message: str, *args, **kwargs):
-        self.log(message, LogLevel.TRACE, *args, **kwargs)
-
     def success(self, message: str, *args, **kwargs):
-        self.log(message, LogLevel.SUCCESS, *args, **kwargs)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.SUCCESS, *args, **kwargs)
     ok = success
+        
+    def _trace(self, message: str, *args, **kwargs):
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.TRACE, *args, **kwargs)
+        
+    def trace(self, error: Exception):
+        trace_str = traceback.format_tb(tb=error.__traceback__)
+        trace_data = traceback.extract_tb(error.__traceback__)        
+
+        
+        self.error(f"Stacktrace for {type(error).__name__}: {error}")
+        
+        try:
+            file, line, func, content = trace_data[-1]
+            self._trace(f"File: {file}")
+            self._trace(f"Line: {line}")
+            self._trace(f"Func: {func}")
+            self._trace(f"Code: {content}")
+            
+        except:
+            self._trace("Unable to extract stacktrace data")
     
-    
+        for i, ln in enumerate(trace_str):
+            self.error(f"{i+1} ---------------------------")
+            self._trace(ln)
+            
+        self.error("-----------------------------")

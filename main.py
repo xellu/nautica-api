@@ -1,11 +1,10 @@
+from colorama import Fore
+
 try:
     import nautica
-except Exception as e:
-    import traceback, colorama
+except Exception as err:
+    import traceback
     from nautica.services.logger import LogManager
     
-    LogManager("Main").critical(f"Framework failed to initialize: {e}")
-    print(colorama.Fore.LIGHTBLACK_EX)
-    traceback.print_exc()
-
-print(colorama.Fore.RESET)
+    logger = LogManager("Main")
+    logger.trace(err)

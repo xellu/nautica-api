@@ -24,5 +24,5 @@ LevelColors = {
     LogLevel.CRITICAL:  [Fore.RED,               Fore.LIGHTRED_EX],
     
     LogLevel.DEBUG:     [Fore.MAGENTA,           Fore.RESET],
-    LogLevel.TRACE:     [Fore.LIGHTRED_EX,       Fore.LIGHTBLACK_EX]
+    LogLevel.TRACE:     [Fore.LIGHTWHITE_EX,     Fore.LIGHTBLACK_EX]
 }

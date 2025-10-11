@@ -1,4 +1,7 @@
 {
+    "framework": {
+        "devmode": true
+    },
     "servers": {
         "http": {
             "enabled": true,
