@@ -1,4 +1,5 @@
 from ...ext.static import log_file
+from ...instances import LogManInstances
 from .levels import LogLevel, LevelColors
 
 import os
@@ -28,12 +29,18 @@ class LogManager:
         if not os.path.exists(self._path):
             open(self._path, "x").close()
             
+        LogManInstances.append(self)
+            
     def log(self, message: str, level: LogLevel, *args, **kwargs): 
         if not isinstance(level, LogLevel):
             raise TypeError("Logger level is not an instance of LogLevel")
         
         if level in [LogLevel.ALL, LogLevel.NONE]:
             raise ValueError(f"Log level '{level.name}' is not a valid log level for logging messages")
+            
+        if level == LogLevel.DEBUG:
+            from ... import Core
+            if not Core.Config.getMaster("framework.devMode"): return
             
         message = message % args
         for key, value in kwargs.items():
@@ -65,6 +72,9 @@ class LogManager:
             self.log(ln, LogLevel.ERROR, *args, **kwargs)
     
     def debug(self, message: str, *args, **kwargs):
+        from ... import Core
+        if not Core.Config.getMaster("framework.devMode"): return
+        
         for ln in message.splitlines():
             self.log(ln, LogLevel.DEBUG, *args, **kwargs)
     

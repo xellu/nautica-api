@@ -13,8 +13,8 @@ fallback = {
 def error_callback(error: Exception, source: str = fallback["source"], message: str = fallback["message"], fatal: bool = False):
     logger.error(f"Error in {source}: {error}")
 
-    # if DEBUG: #TODO: make config work
-    #    traceback.print_exc()
+    if Core.Config.getMaster("framework.devMode"):
+        logger.trace(error)
 
     if fatal:
         Core.Eventer.signal("shutdown.crash", f"Fatal error in {source}: {message}")

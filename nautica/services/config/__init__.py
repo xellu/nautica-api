@@ -4,6 +4,7 @@ import os
 
 from ..logger import LogManager
 from ...ext.static import NauticaConfigTemplate
+from ...instances import ConfigManInstances
 
 logger = LogManager("Nautica.Services.Config")
 
@@ -24,8 +25,15 @@ class ConfigManager:
             open("nautica.config.json", "r", encoding="utf-8").read()
         )
         
-        if self.getMissingKeys(self.masterCfg, NauticaConfigTemplate):
-            raise KeyError(f"Found missing keys in 'nautica.config.json', which are required for framework functionality: {', '.join(self.getMissingKeys(self.masterCfg, NauticaConfigTemplate))}")
+        missing = self.getMissingKeys(self.masterCfg, NauticaConfigTemplate)
+        if missing:
+            logger.critical(f"Found {len(missing)} missing keys from 'nautica.config.json'")
+            for key in missing:
+                logger.critical(f" - {key}")
+                
+            raise EnvironmentError(f"Found missing keys in 'nautica.config.json', which are required for framework functionality: {', '.join(missing)}")
+        
+        ConfigManInstances.append(self)
             
     def getMissingKeys(self, source: dict, template: dict, rel_path: list[str] | None = None):
         rel_path = rel_path if isinstance(rel_path, list) else [] 
@@ -46,3 +54,26 @@ class ConfigManager:
                 missing += self.getMissingKeys(source.get(k), v, rel_path=cur_path)
 
         return missing
+    
+    def getMaster(self, key_path, fallback=None):
+        # {
+        #     "framework": {
+        #         "devMode": True
+        #     }
+        # }
+        # .getMaster("framework.devMode") -> True
+        context = self.masterCfg.copy() 
+        for i, key in enumerate(key_path.split(".")):
+            if not isinstance(context, dict):
+                return fallback
+                
+            context = context.get(key, {} if i+1 != len(key_path.split('.')) else fallback)
+            
+        return context
+    
+    def __call__(self, configId):
+        path = self.getMaster(f"services.config.{configId}")
+        if not path:
+            raise LookupError(f"Unable to find '{configId}' in configs, is it registered?")
+        
+        

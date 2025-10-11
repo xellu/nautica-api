@@ -1,4 +1,7 @@
 import asyncio
+from ...instances import EventManInstances
+
+import builtins
 
 class EventManager:
     def __init__(self, bounce: bool = False):
@@ -13,6 +16,8 @@ class EventManager:
             #"start": [func1, func2, func3],
         }
         self.globals = []
+
+        EventManInstances.append(self)
 
     def on(self, event: str):
         """

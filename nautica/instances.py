@@ -1,2 +1,3 @@
 ConfigManInstances = []
 EventManInstances = []
+LogManInstances = []
