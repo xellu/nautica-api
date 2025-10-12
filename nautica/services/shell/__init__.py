@@ -1,6 +1,7 @@
 import threading
 import time
 
+from ..logger.levels import LogLevel
 from .shared import logger, ShellBus
 
 class ShellService:
@@ -26,6 +27,10 @@ class ShellService:
         logger.info(f"{command} -> {message}")
 
     def run_command(self, data: dict):
+        args = " ".join(data['args'])
+        flags = " ".join(f"--{k}" for k, v in data['flags'].items())
+        
+        logger.log(f"Running command: {data['command']} {args} {flags}", LogLevel.SILENT)
         return ShellBus.signal(data["command"], *data["args"], **data["flags"])
 
     def parse_data(self, command: str):

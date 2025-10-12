@@ -10,6 +10,7 @@ class LogLevel(Enum):
     
     DEBUG = 40
     TRACE = 50
+    SILENT = -999
     
     #unusable for calling Logger.log
     ALL = -1

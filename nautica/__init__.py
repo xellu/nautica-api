@@ -16,7 +16,7 @@ from .services.config import ConfigManager
 from .services.eventer import EventManager
 from .services.shell import ShellService
 
-from .services.shell.commands import ( basic )
+from .services.shell.commands import ( basic, nman )
 
 class Core:
    Logger = LogManager("Nautica.Core")

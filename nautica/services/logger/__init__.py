@@ -1,6 +1,7 @@
 from ...ext.static import log_file
 from ...instances import LogManInstances
 from .levels import LogLevel, LevelColors
+from .tableutil import TableUtil
 
 import os
 import time
@@ -114,3 +115,6 @@ class LogManager:
             self._trace(ln)
             
         self.error("-----------------------------")
+        
+    def table(self):
+        return TableUtil(self)
