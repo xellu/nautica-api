@@ -15,20 +15,26 @@ from .services.logger import LogManager
 from .services.config import ConfigManager
 from .services.eventer import EventManager
 from .services.shell import ShellService
+from .runner import Runner
 
 from .services.shell.commands import ( basic, nman )
 
 class Core:
-   Logger = LogManager("Nautica.Core")
+   Logger = LogManager("Core")
    Eventer = EventManager()
    Config = ConfigManager()
    Shell = ShellService()
+   Runner = Runner()
    
 @Core.Eventer.on("ready")
 def on_ready():
    Core.Logger.ok("Core initialized")
    
    from .services.eventer import ( builtins )
+
+   Core.Runner.init(Core.Config)
+   Core.Runner.start_servers()
+   
    
 Core.Shell.start()
 Core.Eventer.emit("ready")

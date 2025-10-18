@@ -7,7 +7,7 @@ from ...ext.static import NauticaConfigTemplate
 from ...instances import ConfigManInstances
 from .helper import SubConfig
 
-logger = LogManager("Nautica.Services.Config")
+logger = LogManager("Services.Config")
 
 class ConfigManager:
     def __init__(self):

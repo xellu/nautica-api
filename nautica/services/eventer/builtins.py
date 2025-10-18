@@ -3,7 +3,7 @@ from ... import Core
 
 import os
 
-logger = LogManager("Nautica.Eventer.BuiltIns")
+logger = LogManager("Eventer.BuiltIns")
 fallback = {
     "source": "Nautica API",
     "message": "An error occurred in the Nautica API",

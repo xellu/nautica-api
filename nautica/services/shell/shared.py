@@ -1,5 +1,5 @@
 from ..logger import LogManager
 from ..eventer import EventManager
 
-logger = LogManager("Nautica.Services.Shell")
+logger = LogManager("Services.Shell")
 ShellBus = EventManager()

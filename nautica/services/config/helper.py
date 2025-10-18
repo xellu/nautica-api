@@ -3,7 +3,7 @@ import os
 
 from ..logger import LogManager
 
-logger = LogManager("Nautica.Services.Config.Helper")
+logger = LogManager("Services.Config.Helper")
 
 class SubConfig:
     def __init__(self, path: str, template: dict | None = None, max_retries: int = 3):
