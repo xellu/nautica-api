@@ -13,7 +13,9 @@ def favicon():
     return open("src/assets/favicon.ico", "rb").read()
 
 @App.route("/nautica:about")
-def about_about():    
+def about_about():
+    if not Core.Config.getMaster("framework.devMode"): return Reply(), 401
+    
     return Reply(
         server = "Nautica",
         version = _release    
@@ -21,6 +23,8 @@ def about_about():
     
 @App.route("/nautica:routes")
 def about_routes():
+    if not Core.Config.getMaster("framework.devMode"): return Reply(), 401
+    
     service = Core.Runner.servers["http"]
     routes = [f"{r['meta']['method'].upper()} - {r['route']}" for r in service._routes]
     
@@ -28,5 +32,7 @@ def about_routes():
     
 @App.route("/nautica:remote_addr")
 def about_remote_addr():
+    if not Core.Config.getMaster("framework.devMode"): return Reply(), 401
+    
     return Reply(ip=request.remote_addr)
     

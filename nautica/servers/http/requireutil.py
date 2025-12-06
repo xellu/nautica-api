@@ -31,6 +31,7 @@ class Require:
             .headers(): Get the request headers
             .query(): Get the request query
             .form(): Get the request form
+            .cookies(): Get the request cookies
 
         This will require the request to have a JSON body with the keys "name" and "age" with the types str and int respectively.
 
@@ -88,6 +89,15 @@ class Require:
     def form(self):
         data = self.request.form
 
+        res = self.validate(data)
+        if not res.ok:
+            return res
+        
+        return Response(data)
+    
+    def cookies(self):
+        data = self.request.cookies
+        
         res = self.validate(data)
         if not res.ok:
             return res

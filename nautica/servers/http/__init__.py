@@ -10,6 +10,7 @@ import threading
 from ... import Core, _release
 
 from flask import request
+from werkzeug.serving import WSGIRequestHandler
 
 logger = LogManager("Servers.HTTP")
 
@@ -47,7 +48,7 @@ class HTTPServer:
             if utils.getExt(file) not in ["py", "pyw"]: continue
             
             #imports a route file and tracks all new decorator calls
-            RouteRegistry.routes = [] #clear prev calls
+            RouteRegistry.temp_routes = [] #clear prev calls
             try: utils.importModule(file)
             except Exception as e: #in case the dev (me) is sped
                 Core.Eventer.emit("error", e, "Servers.HTTP", f"Failed to pre-process file '{file}'")
@@ -56,22 +57,27 @@ class HTTPServer:
                 continue
             
             
-            route_prefix = file.replace("src/routes/http", "") #no need to replace \ with / since util.walkPath does that already
-            route_prefix = route_prefix.replace(".py", "")
-            route_prefix = route_prefix.replace(".pyw", "")
-            route_prefix = route_prefix.replace("_", "-")
-            route_prefix = route_prefix.replace(" ", "-")
+            route_prefix = file.replace("src/routes/http", ""
+                                ).replace(".py", ""
+                                ).replace(".pyw", ""
+                                ).replace("_", "-"
+                                ).replace(" ", "-")
             
-            for route in RouteRegistry.routes:
+            for route in RouteRegistry.temp_routes:
                 if route["name_override"] and utils.hasUnicode(route["name_override"], allowed="-_."):
                     logger.warn(f"Route '{route_prefix}/{route['name_override']}' contains disallowed characters")
                     continue
                 
                 route_name = route_prefix + "/" + (route["name_override"] or route["func"].__name__)
-                App.route(
-                    route_name.lower(),
+                # App.route(
+                #     route_name.lower(),
+                #     methods = [route["method"].upper()]
+                # )(route["func"])
+                App.add_url_rule(
+                    rule = route_name,
+                    view_func = route["func"],
                     methods = [route["method"].upper()]
-                )(route["func"])
+                )
                 
                 self._routes.append(
                     {
@@ -100,7 +106,9 @@ class HTTPServer:
             flask.cli.show_server_banner = self._on_load
             App.run(
                 host = Core.Config.getMaster("servers.http.host"),
-                port = Core.Config.getMaster("servers.http.port")
+                port = Core.Config.getMaster("servers.http.port"),
+                
+                request_handler = WSGIOverride
             )
             return
         
@@ -108,7 +116,7 @@ class HTTPServer:
         self._on_load()
         waitress.serve(
             App,
-            ident=f"Nautica v{_release}",
+            ident=f"NauticaAPI v{_release}",
             
             host = Core.Config.getMaster("servers.http.host"),
             port = Core.Config.getMaster("servers.http.port"),
@@ -117,6 +125,14 @@ class HTTPServer:
     def _on_load(self, *args, **kwargs):
         Core.Eventer.emit("ready.http", self)
         logger.ok(f"Listening on port {Core.Config.getMaster("servers.http.port")}")
+    
+
+class WSGIOverride(WSGIRequestHandler):
+    #change "Server" header
+    server_version = f"NauticaAPI v{_release}"
+    sys_version = "(DEV)"
+    
+    def log_request(self, code='-', size='-'): pass #disable default logging
     
 @App.before_request
 def before_req():

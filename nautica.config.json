@@ -1,6 +1,6 @@
 {
     "framework": {
-        "devMode": false
+        "devMode": true
     },
     "servers": {
         "http": {
