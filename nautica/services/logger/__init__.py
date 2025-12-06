@@ -48,15 +48,16 @@ class LogManager:
             message.replace("%{key}%", value)
         
         #(HH:MM:SS) [SELF.NAME/LEVEL] message
+        timestamp = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())
         if level.value >= self.level.value:
             color_tag = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[0]
             color_msg = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[1]
             # print(f"{level.name} {LevelColors.get(level)}")
             
-            print(f"{Fore.LIGHTBLACK_EX}({time.strftime('%H:%M:%S', time.localtime())}){Fore.RESET} {color_tag}[{self.name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", **kwargs)
+            print(f"{Fore.LIGHTBLACK_EX}({timestamp}){Fore.RESET} {color_tag}[{self.name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", **kwargs)
         
         with open(self._path, "a") as f:
-            f.write(f"({time.strftime('%H:%M:%S', time.localtime())}) [{self.name.upper()}/{level.name.upper()}] {message}\n")
+            f.write(f"({timestamp}) [{self.name.upper()}/{level.name.upper()}] {message}\n")
             f.flush()
         
     def info(self, message: str, *args, **kwargs):
@@ -86,7 +87,7 @@ class LogManager:
 
     def success(self, message: str, *args, **kwargs):
         for ln in message.splitlines():
-            self.log(ln, LogLevel.SUCCESS, *args, **kwargs)
+            self.log(ln, LogLevel.OK, *args, **kwargs)
     ok = success
         
     def _trace(self, message: str, *args, **kwargs):

@@ -1,5 +1,8 @@
 from ...services.logger import LogManager
+from ...ext import utils
+from ...api.http import Request as RouteManager
 
+import time
 import flask
 import waitress
 import threading
@@ -16,8 +19,11 @@ class HTTPServer:
         self.active = False
         
         self._thread = None
+        self._routes = []
         
     def start(self):
+        self.preprocessor()
+        
         logger.info("Server is starting")
         
         self.active = True
@@ -26,7 +32,63 @@ class HTTPServer:
         t.start()
         self._thread = t
         
+    def preprocessor(self):
+        logger.info("Running pre-processor")
+        start = time.time()
+
+        files = utils.walkPath("src/routes/http")
+        processed = 0
+        failed = []
+        
+        for file in files:
+            if utils.getExt(file) not in ["py", "pyw"]: continue
+            
+            #imports a route file and tracks all new decorator calls
+            RouteManager.routes = [] #clear prev calls
+            try: utils.importModule(file)
+            except Exception as e: #in case the dev (me) is sped
+                Core.Eventer.emit("error", e, "Servers.HTTP", f"Failed to pre-process file '{file}'")
+
+                failed.append(file)
+                continue
+            
+            
+            route_prefix = file.replace("src/routes/http", "") #no need to replace \ with / since util.walkPath does that already
+            route_prefix = route_prefix.replace(".py", "")
+            route_prefix = route_prefix.replace(".pyw", "")
+            route_prefix = route_prefix.replace("_", "-")
+            route_prefix = route_prefix.replace(" ", "-")
+            
+            for route in RouteManager.routes:
+                if route["name_override"] and utils.hasUnicode(route["name_override"], allowed="-_."):
+                    logger.warn(f"Route '{route_prefix}/{route['name_override']}' contains disallowed characters")
+                    continue
+                
+                route_name = route_prefix + "/" + (route["name_override"] or route["func"].__name__)
+                App.route(
+                    route_name.lower(),
+                    methods = [route["method"].upper()]
+                )
+                
+                self._routes.append(
+                    {
+                        "path": file,
+                        "route": route_name,
+                        "meta": route
+                    }
+                )
+            
+            processed += 1
+
+        #show stats
+        logger.ok(f"Pre-processed {processed} files, registered {len(self._routes)} routes, took {time.time()-start:.2f}s")
+        if len(failed) > 0:
+            logger.warn(f"{len(failed)} Files failed to process:")
+            for f in failed:
+                logger.warn(f" - {f}")
+        
     def _run(self):
+        #run in dev mode
         if Core.Config.getMaster("framework.devMode"):
             logger.warn("Running server in development mode")
 
@@ -37,6 +99,7 @@ class HTTPServer:
             )
             return
         
+        #run in prod using waitress
         self._on_load()
         waitress.serve(
             App,

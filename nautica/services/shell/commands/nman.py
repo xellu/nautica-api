@@ -106,6 +106,36 @@ def nm_dump(act="help", len_limit=50, *args, **kwargs):
                     table.row([name, str(repr(value))[:len_limit]])
                     
             table.display()
+        case _:
+            logger.warn("Unknown option")
+
+def nm_http(act="help", *args, **kwargs):
+    from .... import Core
+    service = Core.Runner.servers["http"]
+
+    match act.lower():
+        case "info":
+            logger.info("HTTP Server Report:")
+            logger.info(f"Status: {'ACTIVE' if Core.Config.getMaster("servers.http.enabled") else 'DISABLED'}")
+            logger.info(f"Host: {Core.Config.getMaster("servers.http.host")}")
+            logger.info(f"Port: {Core.Config.getMaster("servers.http.port")}")
+            logger.info(f"Routes: {len(service._routes)}")
+                    
+            
+        case "routes":
+            table = logger.table()
+            table.labels(["Method", "Route", "Source File"])
+            
+            for r in service._routes:
+                table.row([
+                    r["meta"]["method"].upper(),
+                    r["route"],
+                    r["path"]
+                ])
+            table.display()
+            
+        case _:
+            logger.warn("Unknown option")
 
 actions = {
     "help": {
@@ -122,5 +152,10 @@ actions = {
         "func": nm_dump,
         "description": "For listing functions and variables",
         "usage": "nman dump <vars/fns> [len limit]"
-    }
+    },
+    "http": {
+        "func": nm_http,
+        "description": "For insight into the http server",
+        "usage": "nman http <info/routes>"
+    },
 }

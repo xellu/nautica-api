@@ -3,7 +3,7 @@
 ## Features
 | Feature             | Status     |
 |---------------------|------------|
-| HTTP Server         | planned    |
+| HTTP Server         | WIP        |
 | SocketIO Server     | planned    |
 | WebSocket Server    | planned    |
 
@@ -24,6 +24,11 @@ src
 ```
 nautica
 |
+|-api
+|   |-http 
+|   |-ws
+|   |-io
+|
 |-servers
 |   |-http
 |   |-io
@@ -40,11 +45,9 @@ nautica
 |
 |-ext
 |   |-utils
-|   |-
+|   |-static
 |
 |-runner
-|   |-preprocessor
-|   |-runtime
 ```
 
 taklze jak to bude fungovat bro:
@@ -54,9 +57,8 @@ taklze jak to bude fungovat bro:
 2. importne to vsechny src routes do server runtimu
 3. startne to servery
 
-`src/routes/http/auth.py` - route prefix: `/api/v1`
 
-
+`src/routes/http/api/v1/auth.py`
 ```py
 # /api/v1/auth/(func name)
 

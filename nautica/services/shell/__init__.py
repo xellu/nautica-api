@@ -12,6 +12,12 @@ class ShellService:
         self.thread = None
         self.running = False
         
+    def import_builtins(self): #<--------- REGISTER COMMANDS HERE
+        from .commands import (
+            basic,
+            nman
+        )
+        
     def register_command(self, func, name, description, usage):
         self.handlers[name] = {
             "func": func,
@@ -49,7 +55,8 @@ class ShellService:
                 out["args"].append(data[i])
         
         return out
-    
+
+
     def loop(self):
         logger.ok("Shell Service started")
         while self.running:

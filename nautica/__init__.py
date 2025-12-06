@@ -17,8 +17,6 @@ from .services.eventer import EventManager
 from .services.shell import ShellService
 from .runner import Runner
 
-from .services.shell.commands import ( basic, nman )
-
 class Core:
    Logger = LogManager("Core")
    Eventer = EventManager()
@@ -31,6 +29,7 @@ def on_ready():
    Core.Logger.ok("Core initialized")
    
    from .services.eventer import ( builtins )
+   Core.Shell.import_builtins()
 
    Core.Runner.init(Core.Config)
    Core.Runner.start_servers()

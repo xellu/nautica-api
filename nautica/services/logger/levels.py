@@ -3,7 +3,7 @@ from colorama import Fore
 
 class LogLevel(Enum):
     INFO = 10
-    SUCCESS = 11 #alias: OK = success
+    OK = 11 #alias: OK = success
     WARN = 20
     ERROR = 30
     CRITICAL = 31 #alias: FATAL = critical
@@ -19,7 +19,7 @@ class LogLevel(Enum):
 LevelColors = {
     #level: [tag color, text color]
     LogLevel.INFO:      [Fore.BLUE,              Fore.RESET],
-    LogLevel.SUCCESS:   [Fore.LIGHTGREEN_EX,     Fore.RESET],
+    LogLevel.OK:        [Fore.LIGHTGREEN_EX,     Fore.RESET],
     LogLevel.WARN:      [Fore.YELLOW,            Fore.RESET],
     LogLevel.ERROR:     [Fore.RED,               Fore.RESET],
     LogLevel.CRITICAL:  [Fore.RED,               Fore.LIGHTRED_EX],
