@@ -1,7 +1,13 @@
 from nautica.api.http import (
-    Request
+    Request,
+    Reply,
+    Require,
+    ctx
 )
 
-@Request.GET("test_b")
+@Request.GET("b")
 def test():
-    print("test :)")
+    data = Require(ctx, hello=str).query()
+    if not data.ok:
+        return Reply(hello="no thank you"), 400
+    return Reply(hello=data.content["hello"])

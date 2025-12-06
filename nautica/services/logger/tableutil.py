@@ -28,14 +28,14 @@ class TableUtil:
         
         # Build table
         lines = []
-        lines.append("+-" + "-+-".join("-" * w for w in col_widths) + "-+")
+        lines.append("┌-" + "-┬-".join("-" * w for w in col_widths) + "-┐")
         if self._labels:
             lines.append(format_row(self._labels))
-            lines.append("+-" + "-+-".join("-" * w for w in col_widths) + "-+")
+            lines.append("├-" + "-+-".join("-" * w for w in col_widths) + "-┤")
         for r in self._rows:
             lines.append(format_row(r))
         
-        lines.append("+-" + "-+-".join("-" * w for w in col_widths) + "-+")
+        lines.append("└-" + "-┴-".join("-" * w for w in col_widths) + "-┘")
 
         
         # Print via logger

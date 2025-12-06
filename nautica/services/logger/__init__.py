@@ -28,7 +28,7 @@ class LogManager:
         
         # create log file if not exists
         if not os.path.exists(self._path):
-            open(self._path, "x").close()
+            open(self._path, "x", encoding="utf-8").close()
             
         LogManInstances.append(self)
             
@@ -56,7 +56,7 @@ class LogManager:
             
             print(f"{Fore.LIGHTBLACK_EX}({timestamp}){Fore.RESET} {color_tag}[{self.name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", **kwargs)
         
-        with open(self._path, "a") as f:
+        with open(self._path, "a", encoding="utf-8") as f:
             f.write(f"({timestamp}) [{self.name.upper()}/{level.name.upper()}] {message}\n")
             f.flush()
         

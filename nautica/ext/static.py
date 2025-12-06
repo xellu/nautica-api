@@ -13,7 +13,9 @@ NauticaConfigTemplate = {
             "enabled": True,
         
             "host": "0.0.0.0", #127.0.0.1 if local, 0.0.0.0 if public (iirc)
-            "port": 8100
+            "port": 8100,
+            
+            "realIPHeader": None, #header to get real ip, None - use remote_addr, String - header key (e.g. X-Real-IP, True-Client-IP, CF-Connecting-IP) 
         },
         
         "io": { #config for socket.io server

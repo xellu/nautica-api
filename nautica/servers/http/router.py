@@ -1,13 +1,19 @@
-class _RouteRegistry:
+class RouteManager:
     def __init__(self):
         self.routes = []
         
-    def _create(self, method, func, name_override = None):
+    def _create(self, method, func, name_override = None):        
         self.routes.append({
             "method": method,
             "func": func,
             "name_override": name_override
         })
+        
+    def _get(self, func):
+        for r in self.routes:
+            if r["func"] == func:
+                return r
+        raise ImportError(f"Unable to find '{func.__name__}', make sure @Request.<METHOD> is the top-most decorator")
         
     def GET(self, name_override: str | None = None):
         def decorator(func):
@@ -62,9 +68,6 @@ class _RouteRegistry:
             self._create("patch", func, name_override)
             return func
         return decorator
-
     
 
-    
-
-    
+RouteRegistry = RouteManager()

@@ -3,5 +3,5 @@ from nautica.api.http import (
 )
 
 @Request.POST()
-def test():
+def a():
     print("test :)")

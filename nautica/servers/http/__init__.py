@@ -1,18 +1,21 @@
 from ...services.logger import LogManager
 from ...ext import utils
-from ...api.http import Request as RouteManager
+from .router import RouteRegistry
 
 import time
 import flask
 import waitress
 import threading
 
-from ... import Core
+from ... import Core, _release
+
+from flask import request
 
 logger = LogManager("Servers.HTTP")
 
 App = flask.Flask(__package__)
 
+realIPHeader = Core.Config.getMaster("servers.http.realIPHeader")
 class HTTPServer:
     def __init__(self, runner):
         self.runner = runner
@@ -44,7 +47,7 @@ class HTTPServer:
             if utils.getExt(file) not in ["py", "pyw"]: continue
             
             #imports a route file and tracks all new decorator calls
-            RouteManager.routes = [] #clear prev calls
+            RouteRegistry.routes = [] #clear prev calls
             try: utils.importModule(file)
             except Exception as e: #in case the dev (me) is sped
                 Core.Eventer.emit("error", e, "Servers.HTTP", f"Failed to pre-process file '{file}'")
@@ -59,7 +62,7 @@ class HTTPServer:
             route_prefix = route_prefix.replace("_", "-")
             route_prefix = route_prefix.replace(" ", "-")
             
-            for route in RouteManager.routes:
+            for route in RouteRegistry.routes:
                 if route["name_override"] and utils.hasUnicode(route["name_override"], allowed="-_."):
                     logger.warn(f"Route '{route_prefix}/{route['name_override']}' contains disallowed characters")
                     continue
@@ -68,7 +71,7 @@ class HTTPServer:
                 App.route(
                     route_name.lower(),
                     methods = [route["method"].upper()]
-                )
+                )(route["func"])
                 
                 self._routes.append(
                     {
@@ -86,6 +89,8 @@ class HTTPServer:
             logger.warn(f"{len(failed)} Files failed to process:")
             for f in failed:
                 logger.warn(f" - {f}")
+                
+        from . import builtins
         
     def _run(self):
         #run in dev mode
@@ -103,6 +108,7 @@ class HTTPServer:
         self._on_load()
         waitress.serve(
             App,
+            ident=f"Nautica v{_release}",
             
             host = Core.Config.getMaster("servers.http.host"),
             port = Core.Config.getMaster("servers.http.port"),
@@ -111,4 +117,20 @@ class HTTPServer:
     def _on_load(self, *args, **kwargs):
         Core.Eventer.emit("ready.http", self)
         logger.ok(f"Listening on port {Core.Config.getMaster("servers.http.port")}")
-        
+    
+@App.before_request
+def before_req():
+    if realIPHeader is not None:
+        request.remote_addr = request.headers.get(realIPHeader, request.remote_addr)
+
+@App.after_request
+def after_req(res):
+    message = f"{request.remote_addr}: {request.method} -> {request.path} ({res.status_code})"
+    if res.status_code in range(100, 399):
+        logger.info(message)
+    elif res.status_code in range(400, 499):
+        logger.warn(message)
+    else: #5XX & unknown
+        logger.error(message)
+
+    return res
