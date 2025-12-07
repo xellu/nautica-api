@@ -2,8 +2,6 @@ import flask
 from flask import Request
 from functools import wraps
 
-from .requirements import RequirementRegistry
-
 class RequestContext:
     def __init__(self, request: Request, args):
         self.request = request
@@ -21,7 +19,6 @@ class RouteManager:
             "name_override": name_override
         }
         self.temp_routes.append(r)
-        self.routes.append(r)
         
     def _get(self, func):
         for r in self.routes:
@@ -36,8 +33,7 @@ class RouteManager:
             @wraps(func)
             def wrapper(*args, **kwargs):
                 ctx = RequestContext(
-                    flask.request,
-                    RequirementRegistry._get_requirements(flask.request, func)
+                    flask.request, []
                 )
                                 
                 return func(ctx, *args, **kwargs)

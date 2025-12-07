@@ -2,6 +2,7 @@ import random
 import string
 import hashlib
 import os
+import re
 import importlib.util
 
 def randomStr(length: int=8):
@@ -41,3 +42,8 @@ def importModule(path):
 def getExt(fileName):
     if len(fileName.split("."))  <= 1: return ""
     return fileName.split(".")[-1] 
+
+def toRegex(pattern) -> re.Pattern:
+    escaped = re.escape(pattern)
+    regex = escaped.replace(r"\*", ".*?")
+    return re.compile("^" + regex + "$")

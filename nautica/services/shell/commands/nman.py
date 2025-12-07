@@ -1,9 +1,10 @@
 from ..descriptor import ShellCommand
 from ..shared import logger, ShellBus
-from ....ext.utils import hashStr
+from ....ext.utils import hashStr, toRegex
 
 import inspect
 import threading
+import re
 
 def get_id(x):
     return hashStr(x)[:6]
@@ -110,7 +111,9 @@ def nm_dump(act="help", len_limit=50, *args, **kwargs):
             logger.warn("Unknown option")
 
 def nm_http(act="help", *args, **kwargs):
+    from ....api.http.router import RouteRegistry
     from .... import Core
+    
     service = Core.Runner.servers["http"]
 
     match act.lower():
@@ -119,14 +122,14 @@ def nm_http(act="help", *args, **kwargs):
             logger.info(f"Status: {'ACTIVE' if Core.Config.getMaster("servers.http.enabled") else 'DISABLED'}")
             logger.info(f"Host: {Core.Config.getMaster("servers.http.host")}")
             logger.info(f"Port: {Core.Config.getMaster("servers.http.port")}")
-            logger.info(f"Routes: {len(service._routes)}")
+            logger.info(f"Routes: {len(RouteRegistry.routes)}")
                     
             
         case "routes":
             table = logger.table()
             table.labels(["Method", "Route", "Source File"])
             
-            for r in service._routes:
+            for r in RouteRegistry.routes:
                 table.row([
                     r["meta"]["method"].upper(),
                     r["route"],
@@ -134,8 +137,36 @@ def nm_http(act="help", *args, **kwargs):
                 ])
             table.display()
             
+        case "reload":
+            if len(args) < 1:
+                return logger.info("Usage: nman http reload <path>")
+            
+            pattern = args[0]
+            matches = []
+            if pattern == "*":
+                matches = pattern[:]
+            else:
+                regex = toRegex(pattern)
+                matches = [r for r in RouteRegistry.routes if regex.match(r["path"])]
+            
+            if not matches:
+                return logger.warn(f"No matches found")
+            
+            for r in matches:
+                service.remove_routes(path=r['path'])
+                logger.warn(f"Unloaded {r['path']}")
+                
+            for r in matches:
+                service.preprocess_file(r["path"])
+                logger.ok(f"Loaded {r['path']}")
+                
+            
+            
         case _:
-            logger.warn("Unknown option")
+            logger.info("Usage:")
+            logger.info("  nman http info")
+            logger.info("  nman http routes")
+            logger.info("  nman http reload <path>")
 
 actions = {
     "help": {

@@ -1,8 +1,7 @@
 import json
 
-from ...servers.http.router import RouteRegistry as Request
-from ...servers.http.requirements import RequirementRegistry as Require
-from ...servers.http.router import RequestContext as Context
+from .router import RouteRegistry as Request
+from .router import RequestContext as Context
 from ... import _release
 
 from flask import make_response

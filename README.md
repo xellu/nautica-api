@@ -24,12 +24,12 @@ src
 ```
 nautica
 |
-|-api
+|-api       - public development interface
 |   |-http 
 |   |-ws
 |   |-io
 |
-|-servers
+|-servers       - internal server code
 |   |-http
 |   |-io
 |   |-ws
@@ -46,6 +46,7 @@ nautica
 |-ext
 |   |-utils
 |   |-static
+|   |-require_util
 |
 |-runner
 ```

@@ -131,7 +131,7 @@ class Require:
         except:
             return {}
         
-    def body_legacy(self):
+    def bodyLegacy(self):
         """
         (!) DEPRECATED: Use .body() instead!!!
 

@@ -1,6 +1,6 @@
 from ...services.logger import LogManager
 from ...ext import utils
-from .router import RouteRegistry
+from ...api.http.router import RouteRegistry
 
 import time
 import flask
@@ -23,7 +23,6 @@ class HTTPServer:
         self.active = False
         
         self._thread = None
-        self._routes = []
         
     def start(self):
         self.preprocessor()
@@ -45,58 +44,105 @@ class HTTPServer:
         failed = []
         
         for file in files:
-            if utils.getExt(file) not in ["py", "pyw"]: continue
-            
-            #imports a route file and tracks all new decorator calls
-            RouteRegistry.temp_routes = [] #clear prev calls
-            try: utils.importModule(file)
-            except Exception as e: #in case the dev (me) is sped
-                Core.Eventer.emit("error", e, "Servers.HTTP", f"Failed to pre-process file '{file}'")
-
-                failed.append(file)
-                continue
-            
-            
-            route_prefix = file.replace("src/routes/http", ""
-                                ).replace(".py", ""
-                                ).replace(".pyw", ""
-                                ).replace("_", "-"
-                                ).replace(" ", "-")
-            
-            for route in RouteRegistry.temp_routes:
-                if route["name_override"] and utils.hasUnicode(route["name_override"], allowed="-_."):
-                    logger.warn(f"Route '{route_prefix}/{route['name_override']}' contains disallowed characters")
-                    continue
-                
-                route_name = route_prefix + "/" + (route["name_override"] or route["func"].__name__)
-                # App.route(
-                #     route_name.lower(),
-                #     methods = [route["method"].upper()]
-                # )(route["func"])
-                App.add_url_rule(
-                    rule = route_name,
-                    view_func = route["func"],
-                    methods = [route["method"].upper()]
-                )
-                
-                self._routes.append(
-                    {
-                        "path": file,
-                        "route": route_name,
-                        "meta": route
-                    }
-                )
-            
-            processed += 1
+            if self.preprocess_file(file): processed += 1
 
         #show stats
-        logger.ok(f"Pre-processed {processed} files, registered {len(self._routes)} routes, took {time.time()-start:.2f}s")
+        logger.ok(f"Pre-processed {processed} files, registered {len(RouteRegistry.routes)} routes, took {time.time()-start:.2f}s")
         if len(failed) > 0:
             logger.warn(f"{len(failed)} Files failed to process:")
             for f in failed:
                 logger.warn(f" - {f}")
                 
         from . import builtins
+        
+    def preprocess_file(self, path):
+        if utils.getExt(path) not in ["py", "pyw"]: return False
+        
+        #imports a route file and tracks all new decorator calls
+        RouteRegistry.temp_routes = [] #clear prev calls
+        try: utils.importModule(path)
+        except Exception as e: #in case the dev (me) is sped
+            Core.Eventer.emit("error", e, "Servers.HTTP", f"Failed to pre-process file '{path}'")
+            return False
+        
+        
+        route_prefix = path.replace("src/routes/http", ""
+                            ).replace(".py", ""
+                            ).replace(".pyw", ""
+                            ).replace("_", "-"
+                            ).replace(" ", "-")
+        
+        for route in RouteRegistry.temp_routes:
+            if route["name_override"] and utils.hasUnicode(route["name_override"], allowed="-_."):
+                logger.warn(f"Route '{route_prefix}/{route['name_override']}' contains disallowed characters")
+                continue
+            
+            route_name = route_prefix + "/" + (route["name_override"] or route["func"].__name__)
+            rule = App.add_url_rule( #TODO: fix, does not return rule_obj
+                rule = route_name,
+                view_func = route["func"],
+                methods = [route["method"].upper()]
+            )
+            
+            RouteRegistry.routes.append(
+                {
+                    "path": path,
+                    "route": route_name,
+                    "rule": rule,
+                    "meta": route
+                }
+            )
+        return True
+        
+        
+    def remove_routes(self, path = None, route = None, rule = None, meta = None):
+        """Remove all routes that matches any parameter (path, route, rule or meta)"""
+        to_remove = []
+        for r in RouteRegistry.routes:
+            if (
+                (path and r["path"] == path) or
+                (route and r["route"] == route) or
+                (rule and r["rule"] == rule) or
+                (meta and r["meta"] == meta)
+            ): to_remove.append(r)
+            
+        for r in to_remove:
+            self.remove_route(r)
+            
+        return len(to_remove)
+                
+    def remove_route(self, route: dict):
+        endpoint = route["rule"].endpoint
+        rule_obj = route["rule"]
+
+        #remove from view funcs
+        if endpoint in App.view_functions:
+            App.view_functions.pop(endpoint, None)
+            
+        rules_to_delete = [
+            url_rule
+            for url_rule in App.url_map.iter_rules()
+            if url_rule is rule_obj
+            or url_rule.endpoint == endpoint
+        ]
+
+        for url_rule in rules_to_delete:
+            #remove from main list
+            if url_rule in App.url_map._rules:
+                App.url_map._rules.remove(url_rule)
+
+            #remove from endpoints
+            if url_rule.endpoint in App.url_map._rules_by_endpoint:
+                ep_rules = App.url_map._rules_by_endpoint[url_rule.endpoint]
+                if url_rule in ep_rules:
+                    ep_rules.remove(url_rule)
+                    
+                if not ep_rules:
+                    App.url_map._rules_by_endpoint.pop(url_rule.endpoint, None)
+
+        #remove from internal registry
+        if route in RouteRegistry.routes:
+            RouteRegistry.routes.remove(route)
         
     def _run(self):
         #run in dev mode

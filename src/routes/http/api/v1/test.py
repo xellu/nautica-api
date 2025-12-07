@@ -1,12 +1,10 @@
 from nautica.api.http import (
     Request,
-    Require,
     Reply,
     Error,
     Context
 )
 
 @Request.GET("a")
-
-def test(ctx):
-   return Reply(args=ctx.args)
+def test(ctx: Context):
+   return Reply(ip=ctx.request.remote_addr)

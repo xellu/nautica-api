@@ -80,6 +80,7 @@ class ShellService:
                     Core.Eventer.emit("shutdown", "Requested by admin")
                     return
                 logger.error(f"Error in shell loop: {err}")
+                Core.Eventer.emit("error", err, "Services.Shell", "Error in shell loop")
 
         logger.warn("Shell loop exited")
         self.stop()
