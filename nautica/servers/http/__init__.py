@@ -95,16 +95,11 @@ class HTTPServer:
         return True
         
         
-    def remove_routes(self, path = None, route = None, rule = None, meta = None):
+    def remove_routes(self, path):
         """Remove all routes that matches any parameter (path, route, rule or meta)"""
         to_remove = []
         for r in RouteRegistry.routes:
-            if (
-                (path and r["path"] == path) or
-                (route and r["route"] == route) or
-                (rule and r["rule"] == rule) or
-                (meta and r["meta"] == meta)
-            ): to_remove.append(r)
+            if (r["path"] == path): to_remove.append(r)
             
         for r in to_remove:
             self.remove_route(r)
@@ -112,8 +107,10 @@ class HTTPServer:
         return len(to_remove)
                 
     def remove_route(self, route: dict):
-        endpoint = route["rule"].endpoint
-        rule_obj = route["rule"]
+        rule_obj = self.get_rule(route)
+        if not rule_obj:
+            return logger.warn(f"Unable to find rule_obj for {route['route']}")
+        endpoint = rule_obj.endpoint
 
         #remove from view funcs
         if endpoint in App.view_functions:
@@ -143,6 +140,11 @@ class HTTPServer:
         #remove from internal registry
         if route in RouteRegistry.routes:
             RouteRegistry.routes.remove(route)
+        
+    def get_rule(self, route: dict):
+        for rule in App.url_map.iter_rules():
+            if rule.rule == route["route"]:
+                return rule
         
     def _run(self):
         #run in dev mode

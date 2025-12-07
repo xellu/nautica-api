@@ -144,7 +144,7 @@ def nm_http(act="help", *args, **kwargs):
             pattern = args[0]
             matches = []
             if pattern == "*":
-                matches = pattern[:]
+                matches = RouteRegistry.routes[:]
             else:
                 regex = toRegex(pattern)
                 matches = [r for r in RouteRegistry.routes if regex.match(r["path"])]
