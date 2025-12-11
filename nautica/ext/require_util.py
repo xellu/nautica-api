@@ -8,7 +8,7 @@ def RawReply(**kwargs):
 
 class Response:
     def __init__(self, content: dict, ok: bool = True):
-        self.content = content
+        self.content = dict(content)
         self.ok = ok
 
 
@@ -44,13 +44,13 @@ class Require:
         self.request = request
         self.kwargs = kwargs
 
-    def validate(self, data: dict):
+    def validate(self, data: dict, _in: str = "field"):
         for k, v in self.kwargs.items():
             if k not in data.keys():
-                return Response(RawReply(error=f"Missing required value for {k}"), False)
+                return Response(RawReply(error=f"Missing required value for '{k}' in {_in}"), False)
 
             if type(data[k]) != v:
-                return Response(RawReply(error=f"Invalid type for {k}, provided {type(k).__name__}, expected {v.__name__}"), False)
+                return Response(RawReply(error=f"Invalid type for '{k}' in {_in}, provided {type(k).__name__} - expected {v.__name__}"), False)
         
         return Response({})
 
@@ -60,9 +60,9 @@ class Require:
         try:
             data = json.loads(data)
         except:
-            return Response(RawReply(error="Unable to parse request body"), False)    
+            return Response(RawReply(error="A required request field 'body' is missing"), False)    
         
-        res = self.validate(data)
+        res = self.validate(data, "body")
         if not res.ok:
             return res
         
@@ -71,7 +71,7 @@ class Require:
     def headers(self):
         data = self.request.headers
 
-        res = self.validate(data)
+        res = self.validate(data, "headers")
         if not res.ok:
             return res
         
@@ -80,7 +80,7 @@ class Require:
     def query(self):
         data = self.request.args
 
-        res = self.validate(data)
+        res = self.validate(data, "query")
         if not res.ok:
             return res
         
@@ -89,7 +89,7 @@ class Require:
     def form(self):
         data = self.request.form
 
-        res = self.validate(data)
+        res = self.validate(data, "form")
         if not res.ok:
             return res
         
@@ -98,7 +98,7 @@ class Require:
     def cookies(self):
         data = self.request.cookies
         
-        res = self.validate(data)
+        res = self.validate(data, "cookies")
         if not res.ok:
             return res
         

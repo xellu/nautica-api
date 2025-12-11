@@ -132,7 +132,7 @@ def nm_http(act="help", *args, **kwargs):
             for r in RouteRegistry.routes:
                 table.row([
                     r["meta"]["method"].upper(),
-                    r["route"],
+                    r["name"],
                     r["path"]
                 ])
             table.display()

@@ -42,7 +42,9 @@ class LogManager:
         if level == LogLevel.DEBUG:
             from ... import Core
             if not Core.Config.getMaster("framework.devMode"): return
-            
+        
+        if not isinstance(message, str): message = str(message)
+        
         message = message % args
         for key, value in kwargs.items():
             message.replace("%{key}%", value)
@@ -61,38 +63,53 @@ class LogManager:
             f.flush()
         
     def info(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
         for ln in message.splitlines():
             self.log(ln, LogLevel.INFO, *args, **kwargs)
     
     def warn(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
         for ln in message.splitlines():
             self.log(ln, LogLevel.WARN, *args, **kwargs)
     warning = warn
     
     def error(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
         for ln in message.splitlines():
             self.log(ln, LogLevel.ERROR, *args, **kwargs)
     
     def debug(self, message: str, *args, **kwargs):
         from ... import Core
         if not Core.Config.getMaster("framework.devMode"): return
-        
+
+        if not isinstance(message, str): message = str(message)        
         for ln in message.splitlines():
             self.log(ln, LogLevel.DEBUG, *args, **kwargs)
     
     def critical(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
         for ln in message.splitlines():
             self.log(ln, LogLevel.CRITICAL, *args, **kwargs)
     fatal = critical
 
     def success(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
         for ln in message.splitlines():
             self.log(ln, LogLevel.OK, *args, **kwargs)
     ok = success
         
     def _trace(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
         for ln in message.splitlines():
             self.log(ln, LogLevel.TRACE, *args, **kwargs)
+        
+    def dir(self, obj: any):
+        obj_name = obj.__name__ if hasattr(obj, "__name__") else "obj"
+        for key in dir(obj):
+            if key in ["__globals__", "__builtins__"]: continue
+            
+            ln = f"{obj_name}.{key} = {getattr(obj, key)}"
+            self.log(ln, LogLevel.DEBUG)
         
     def trace(self, error: Exception):
         trace_str = traceback.format_tb(tb=error.__traceback__)

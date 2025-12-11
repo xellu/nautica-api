@@ -2,7 +2,7 @@ import json
 
 from .router import RouteRegistry as Request
 from .router import RequestContext as Context
-from ... import _release
+from .require import RequirementManager
 
 from flask import make_response
 
@@ -14,3 +14,5 @@ def Reply(**kwargs):
 
 def Error(message, **kwargs):
     return Reply(error=message, **kwargs)
+
+Require = RequirementManager()

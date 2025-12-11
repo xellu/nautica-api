@@ -70,24 +70,29 @@ class HTTPServer:
                             ).replace(".py", ""
                             ).replace(".pyw", ""
                             ).replace("_", "-"
-                            ).replace(" ", "-")
+                            ).replace(" ", "-"
+                            ).replace("[", "<"
+                            ).replace("]", ">")
         
         for route in RouteRegistry.temp_routes:
-            if route["name_override"] and utils.hasUnicode(route["name_override"], allowed="-_."):
-                logger.warn(f"Route '{route_prefix}/{route['name_override']}' contains disallowed characters")
+            if route.name_override and utils.hasUnicode(route.name_override, allowed="-_."):
+                logger.warn(f"Route '{route_prefix}/{route.name_override}' contains disallowed characters")
                 continue
             
-            route_name = route_prefix + "/" + (route["name_override"] or route["func"].__name__)
+            route_name = route_prefix + "/" + (route.name_override or route.func.__name__)
+            route_name = route_name.replace("+root/", "")
+            
             rule = App.add_url_rule( #TODO: fix, does not return rule_obj
                 rule = route_name,
-                view_func = route["func"],
-                methods = [route["method"].upper()]
+                view_func = route.wrapper,
+                methods = [route.method.upper()]
             )
             
             RouteRegistry.routes.append(
                 {
+                    "route": route,
                     "path": path,
-                    "route": route_name,
+                    "name": route_name,
                     "rule": rule,
                     "meta": route
                 }
@@ -143,7 +148,7 @@ class HTTPServer:
         
     def get_rule(self, route: dict):
         for rule in App.url_map.iter_rules():
-            if rule.rule == route["route"]:
+            if rule.rule == route["name"]:
                 return rule
         
     def _run(self):
