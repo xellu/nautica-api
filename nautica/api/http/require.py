@@ -9,6 +9,41 @@ logger = LogManager("API.HTTP.Router")
 
 class RequirementManager:
     def __init__(self):
+        """
+        Sets minimal request content requirements.
+        
+        ## Methods:
+            - .body(**kwargs)
+            - .headers(**kwargs)
+            - .query(**kwargs)
+            - .form(**kwargs)
+            - .cookies(**kwargs)
+                    
+        ## Example:
+            ```
+            from nautica.api.http import (Request, Require, Context, Reply)
+            
+            @Request.GET()
+            @Require.body(hello=str)
+            def foo(ctx: Context):
+                ...
+            ```
+            \n
+            When a request is sent to the endpoint with a body `'{"hello": "world"}'`, it will pass the data into ctx.args. You can retrieve the data like this:
+            ```
+            ...
+            @Require.body(hello=str)
+            def foo(ctx: Context):
+                hello = ctx.args.body["hello"]
+                ...
+            ```
+            The context will **ALWAYS** contain the required keys.\n
+            If a request is missing them or they have a different data type, the request will not go through and it will not reach your function.
+     
+        """
+
+        
+        
         self.map = {}
         
     def _create(self, wrapper, field, kwargs):
@@ -46,9 +81,9 @@ class RequirementManager:
             
         return decorator
     
-    def header(self, **kwargs):
+    def headers(self, **kwargs):
         def decorator(func):
-            self._create(func, "header", kwargs)
+            self._create(func, "headers", kwargs)
             return func
             
         return decorator
