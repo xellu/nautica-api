@@ -147,3 +147,14 @@ class Require:
         if self._legacyInvalidate(data, self.kwargs):
             return None
         return data
+    
+class RequestObjSubstitute:
+    def __init__(self):
+        self.body = {}
+        self.headers = {}
+        self.args = {}
+        self.form = {}
+        self.cookies = {}
+    
+    def get_data(self, as_text: bool = False):
+        return json.dumps(self.body)

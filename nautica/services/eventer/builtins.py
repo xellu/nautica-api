@@ -44,6 +44,8 @@ def shutdown(reason: str = None):
     #         service.stop()
     #         logger.info("All services stopped")
 
+    Core.MongoDB.stop()
+
     logger.ok("Shutdown complete")
 
     os._exit(0)

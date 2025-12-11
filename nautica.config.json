@@ -1,7 +1,7 @@
 {
     "framework": {
         "devMode": true,
-        "preloadConfigs": true
+        "preloadConfigs": false
     },
     "servers": {
         "http": {
@@ -29,6 +29,9 @@
     "services": {
         "config": {
             "example": "example.template.json"
+        },
+        "database": {
+            "mongoUri": null
         }
     }
 }

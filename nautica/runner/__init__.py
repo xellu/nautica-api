@@ -5,18 +5,25 @@ logger = LogManager("Runner")
 
 class Runner:
     def __init__(self):
-        self.config: ConfigManager = None
         self.servers = {
             "http": None,
             "io": None,
             "ws": None,
         }
         
-    def init(self, config):
-        self.config = config
-        
     def start_servers(self):
+        from .. import Core
         from ..servers.http import HTTPServer
-                
-        self.servers["http"] = HTTPServer(self)
-        self.servers["http"].start()
+        # from ..servers.ws import WebSocketServer
+        
+        config = Core.Config
+        
+        if config.getMaster("servers.http.enabled"):
+            self.servers["http"] = HTTPServer(self)
+            self.servers["http"].start()
+        else: logger.info("HTTP Server is disabled")
+            
+        # if config.getMaster("servers.ws.enabled"):
+        #     self.servers["ws"] = WebSocketServer(self)
+        #     self.servers["ws"].start()
+        # else: logger.info("WebSocket Server is disabled")

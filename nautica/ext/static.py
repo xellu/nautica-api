@@ -38,6 +38,9 @@ NauticaConfigTemplate = {
         "config": {
             # "config_id": "path/to/preset" #config layout/template; path relative to /src/assets
             "example": "example.config.json"
+        },
+        "database": {
+            "mongoUri": None
         }
     }
 }
