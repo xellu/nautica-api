@@ -5,6 +5,7 @@ log_file = f"nautica_{time.strftime("%d_%m_%y__%H_%M_%S", time.localtime())}.log
 NauticaConfigTemplate = {
     "framework": {
         "devMode": True, #set to false for production
+        "preloadConfigs": True, #will attempt to load all registered configs at startup
     },
     
     "servers": {
@@ -16,6 +17,7 @@ NauticaConfigTemplate = {
             "port": 8100,
             
             "realIPHeader": None, #header to get real ip, None - use remote_addr, String - header key (e.g. X-Real-IP, True-Client-IP, CF-Connecting-IP) 
+            "allowSchemeRequests": True, #allows requests to /nautica:scheme?uri=<route>
         },
         
         "io": { #config for socket.io server

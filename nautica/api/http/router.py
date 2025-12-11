@@ -50,12 +50,23 @@ class Decorator:
 class RouteManager:
     def __init__(self):
         self.temp_routes = []
-        self.routes = []
+        self.routes = [
+            # {
+            #     "route": RouteData obj,
+            #     "path": path to src file,
+            #     "name": /api/v1/example,
+            #     "rule": flask rule obj
+            # }
+        ]
         
     def _create(self, r: RouteData):
         self.temp_routes.append(r)
         logger.debug(f"Registered route for {r.func.__name__}, {r.method=}, {r.name_override=}")
 
+    def _getFromName(self, name):
+        for r in self.routes:
+            if r["name"].lower() == name:
+                return r
 
     def GET(self, name_override: str | None = None):
         return Decorator(self, "get", name_override).decorator

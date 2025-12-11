@@ -27,7 +27,7 @@ class HTTPServer:
     def start(self):
         self.preprocessor()
         
-        logger.info("Server is starting")
+        logger.info("Server is starting...")
         
         self.active = True
         
@@ -36,7 +36,7 @@ class HTTPServer:
         self._thread = t
         
     def preprocessor(self):
-        logger.info("Running pre-processor")
+        logger.info("Running pre-processor...")
         start = time.time()
 
         files = utils.walkPath("src/routes/http")
@@ -93,8 +93,7 @@ class HTTPServer:
                     "route": route,
                     "path": path,
                     "name": route_name,
-                    "rule": rule,
-                    "meta": route
+                    "rule": rule
                 }
             )
         return True

@@ -25,6 +25,7 @@ class ConfigManager:
         self.masterCfg = json.loads(
             open("nautica.config.json", "r", encoding="utf-8").read()
         )
+        self.sub_configs = {}
         
         missing = self.getMissingKeys(self.masterCfg, NauticaConfigTemplate)
         if missing:
@@ -35,7 +36,20 @@ class ConfigManager:
             raise EnvironmentError(f"Found missing keys in 'nautica.config.json', which are required for framework functionality: {', '.join(missing)}")
         
         ConfigManInstances.append(self)
-            
+        self.preload()
+        
+    def preload(self): #preload all configs
+        if not self.getMaster("framework.preloadConfigs"): return
+        logger.info("Preloading configs...")
+        
+        loaded = 0
+        for configId in self.getMaster("services.config").keys():
+            try: self(configId)
+            except Exception as e: logger.trace(e)
+            else: loaded += 1
+                
+        logger.ok(f"Preloaded {loaded} config files")
+                
     def getMissingKeys(self, source: dict, template: dict, rel_path: list[str] | None = None):
         rel_path = rel_path if isinstance(rel_path, list) else [] 
         #^ used to identify what key is missing if nested 
@@ -77,6 +91,9 @@ class ConfigManager:
         if not path:
             raise LookupError(f"Unable to find '{configId}' in configs, is it registered?")
         
+        if configId in self.sub_configs.keys():
+            return self.sub_configs.get(configId)
+        
         template_path = os.path.join("src", "assets", path)
         template = {}
         
@@ -84,8 +101,9 @@ class ConfigManager:
             open(template_path, "r", encoding="utf-8").read()
         )
         
-        return SubConfig(
+        cfg = SubConfig(
             path = path,
             template = template
         )
-        
+        self.sub_configs[configId] = cfg #save instance
+        return cfg

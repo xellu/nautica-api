@@ -1,6 +1,7 @@
 {
     "framework": {
-        "devMode": true
+        "devMode": true,
+        "preloadConfigs": true
     },
     "servers": {
         "http": {
@@ -9,7 +10,8 @@
             "host": "0.0.0.0",
             "port": 8100,
 
-            "realIPHeader": null
+            "realIPHeader": null,
+            "allowSchemeRequests": true
         },
         "io": {
             "enabled": true,

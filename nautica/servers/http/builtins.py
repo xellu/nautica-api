@@ -1,8 +1,10 @@
 from . import App
-from ...api.http import Reply, Error
 from ... import _release, Core
+from ...api.http import Reply, Error, Request as RouteRegistry, Require as RequirementManager
+from ...ext.require_util import Require 
 
 from flask import request
+import inspect
 import os
 
 @App.route("/favicon.ico")
@@ -36,3 +38,22 @@ def about_remote_addr():
     
     return Reply(ip=request.remote_addr)
     
+@App.route("/nautica:scheme")
+def about_scheme():
+    if not Core.Config.getMaster("servers.http.allowSchemeRequests"): return Reply(), 401
+    
+    data = Require(request, uri=str).query()
+    if not data.ok: return Reply(**data.content), 400
+    
+    r = RouteRegistry._getFromName(data.content["uri"])
+    if not r:
+        return Error("Route not found"), 404
+    
+    req = RequirementManager._get_requirements(inspect.unwrap(r["route"].wrapper))
+    if not req: return Reply() #no requirements
+    
+    for field in req.values(): #makes it json serializable (turns classes into strings)
+        for key, value in field.items():
+            field[key] = value.__name__
+    
+    return Reply(**req)

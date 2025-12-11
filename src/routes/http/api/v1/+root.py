@@ -7,8 +7,9 @@ from nautica.api.http import (
     Error,
     Context
 )
+from nautica.api import Config
 
 @Request.GET()
-@Require.query(a=str)
+# @Require.query(key=str)
 def test(ctx: Context):
-    return Reply(ip=ctx.request.remote_addr, args=ctx.args.toDict(), took=time.time()-ctx.created_at)
+    return Reply(**Config("example").data)
