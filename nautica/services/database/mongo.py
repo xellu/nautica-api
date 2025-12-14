@@ -32,7 +32,8 @@ class MongoDBWrapper:
 
     def stop(self):
         if self.thread.is_alive(): self.thread.join()
-        logger.ok("Database connection closed")
+        if self.config.getMaster("services.database.mongoUri"):
+            logger.ok("Database connection closed")
 
     def connect(self) -> None:
             """

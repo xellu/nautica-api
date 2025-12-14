@@ -61,11 +61,19 @@ class XelDB:
         self.thread.join()
         
     def _loop(self):
+        _loop_lock = 5
         while self.thread_running:
-            time.sleep(5)
+            _loop_lock -= 1
+            
+            if _loop_lock > 0:
+                continue        
+            _loop_lock = 5
+    
             if self.unsaved:
                 self.save()
                 self.unsaved = False
+                
+            time.sleep(1)
                 
         self.save()
         
