@@ -18,6 +18,7 @@ from .services.config import ConfigManager
 from .services.eventer import EventManager
 from .services.shell import ShellService
 from .services.database.mongo import MongoDBWrapper
+from .services.sessions import SessionManager
 from .runner import Runner
 
 class Core:
@@ -25,6 +26,7 @@ class Core:
    Eventer = EventManager()
    Config = ConfigManager()
    Shell = ShellService()
+   Sessions = SessionManager()
    Runner = Runner()
    
    MongoDB = MongoDBWrapper(Config, Eventer)
@@ -35,10 +37,13 @@ def on_ready():
    Core.Logger.ok("Core initialized")
    
    from .services.eventer import ( builtins )
+   from .services.database.xeldb import XelDB
+   
    Core.Shell.import_builtins()
    Core.Runner.start_servers()
    
    Core.MongoDB.start()
+   Core.Sessions.db = XelDB("sessions")
    
    
 Core.Shell.start()

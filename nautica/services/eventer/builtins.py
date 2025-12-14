@@ -1,5 +1,6 @@
 from ..logger import LogManager
 from ... import Core
+from ...ext.procedures import remove_cache
 
 import os
 
@@ -36,16 +37,16 @@ def shutdown(reason: str = None):
     logger.info(f"Shutdown requested ({reason or 'No reason provided'})")
     logger.info("Stopping services. Use 'stop --force' if it is stuck")
 
-    # Stop services
-    # services = Core.ServiceManager.getAllServices()
-    # for service in services:
-    #     if service.isRunning():
-    #         logger.info(f"Stopping service {service.name}...")
-    #         service.stop()
-    #         logger.info("All services stopped")
-
+    #stop services
     Core.MongoDB.stop()
+
+    #additional procedures
+    remove_cache()
 
     logger.ok("Shutdown complete")
 
     os._exit(0)
+    
+@Core.Eventer.on("ready")
+def on_ready():
+    remove_cache()

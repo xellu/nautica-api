@@ -35,7 +35,7 @@ nautica
 |   |-ws
 |
 |-services
-|   |-database
+|   |-database (mongo, xeldb)
 |   |-config
 |   |-shell
 |   |-logger

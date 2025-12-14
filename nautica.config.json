@@ -1,7 +1,8 @@
 {
     "framework": {
         "devMode": true,
-        "preloadConfigs": false
+        "preloadConfigs": false,
+        "disableCacheFiles": true
     },
     "servers": {
         "http": {

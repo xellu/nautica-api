@@ -9,6 +9,7 @@ __pycache__/
 #other
 .logs/
 *.config.json
+*.xdb
 
 # Distribution / packaging
 .Python

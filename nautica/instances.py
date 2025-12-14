@@ -1,3 +1,4 @@
 ConfigManInstances = []
 EventManInstances = []
 LogManInstances = []
+XelDBInstances = []
