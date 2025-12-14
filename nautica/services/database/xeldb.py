@@ -8,7 +8,6 @@ import uuid
 import time
 import threading
 
-logger = LogManager("Services.Database.XelDB")
 
 class XelDB:
     def __init__(self, path, primary_key: str = None):
@@ -189,10 +188,3 @@ class XelDB:
 
             item = self.data.pop(itemId, None)
             return item is not None
-    
-#events-----------
-@Core.Eventer.on("shutdown")
-def on_shutdown():
-    for db in instances.XelDBInstances:
-        db.stop()
-        logger.ok(f"Stopped XelDB driver for '{os.path.basename(db.path)}'")

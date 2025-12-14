@@ -1,5 +1,5 @@
 from ..logger import LogManager
-from ... import Core
+from ... import Core, instances
 from ...ext.procedures import remove_cache
 
 import os
@@ -39,6 +39,10 @@ def shutdown(reason: str = None):
 
     #stop services
     Core.MongoDB.stop()
+    
+    for db in instances.XelDBInstances:
+        db.stop()
+        logger.ok(f"Stopped XelDB driver for '{os.path.basename(db.path)}'")
 
     #additional procedures
     remove_cache()
