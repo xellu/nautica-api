@@ -3,8 +3,8 @@
 ## Features
 | Feature             | Status     |
 |---------------------|------------|
-| HTTP Server         | WIP        |
-| SocketIO Server     | planned    |
+| HTTP Server         | finished   |
+| SocketIO Server     | WIP        |
 | WebSocket Server    | planned    |
 
 ## App structure

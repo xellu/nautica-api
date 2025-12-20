@@ -43,7 +43,9 @@ def on_ready():
    Core.Runner.start_servers()
    
    Core.MongoDB.start()
-   Core.Sessions.db = XelDB("sessions")
+   Core.Sessions.db = XelDB("sessions", "sessionId")
+   
+   Core.Sessions.db.create(sessionId="test", user={"minecraftUuid": "aaa-bbb-ccc-ddd"})
    
    
 Core.Shell.start()
