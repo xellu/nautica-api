@@ -12,6 +12,12 @@ def Reply(**kwargs):
     
     return r
 
+def ReplyList(*args):
+    r = make_response(json.dumps(args))
+    r.headers["Content-Type"] = "application/json"
+    
+    return r
+
 def Error(message, **kwargs):
     return Reply(error=message, **kwargs)
 
