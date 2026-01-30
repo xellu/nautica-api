@@ -8,9 +8,30 @@ import uuid
 import time
 import threading
 
-
+#yes i ai-generated the docs
 class XelDB:
+    """
+    Lightweight file-backed JSON database with optional primary-key indexing.
+
+    Data is stored in-memory and periodically flushed to disk in a compressed
+    `.xdb` file using a background thread.
+
+    Features:
+    - Thread-safe operations
+    - Automatic persistence
+    - Optional primary-key lookup
+    - Simple CRUD-style API
+    """
+
     def __init__(self, path, primary_key: str = None):
+        """
+        Initialize a database instance.
+
+        Args:
+            path (str): Path to the database file (without `.xdb` extension).
+            primary_key (str, optional): Property name to use as a unique
+                primary key for fast lookup.
+        """
         self.path = path + ".xdb"
         self.primary_key = primary_key
 
@@ -19,8 +40,8 @@ class XelDB:
         self.thread = threading.Thread(target=self._loop, daemon=True)
         self.unsaved = False
 
-        self.data = {}
-        self.data_keyed = {}
+        self.data = {}         # _id -> item
+        self.data_keyed = {}   # primary_key -> _id
 
         if not os.path.exists(self.path):
             _dir = os.path.dirname(self.path)
@@ -35,18 +56,28 @@ class XelDB:
     # ---------- persistence ----------
 
     def load(self):
+        """
+        Load database contents from disk into memory.
+
+        Automatically rebuilds the primary-key index if one is defined.
+        """
         with self.lock:
             raw = open(self.path, "rb").read()
             raw = zlib.decompress(raw).decode("utf-8")
             self.data = json.loads(raw)
-            
+
             if not self.primary_key:
                 return
-            
+
             for item in self.data.values():
                 self.create_keyed_alt(item)
 
     def save(self):
+        """
+        Persist the current database state to disk.
+
+        Data is written atomically using a temporary file.
+        """
         with self.lock:
             raw = json.dumps(self.data).encode("utf-8")
             raw = zlib.compress(raw)
@@ -57,70 +88,130 @@ class XelDB:
             os.replace(temp, self.path)
 
     def stop(self):
+        """
+        Stop the background persistence thread and force a final save.
+        """
         self.thread_running = False
         self.thread.join()
-        
+
     def _loop(self):
+        """
+        Background loop that periodically saves the database if changes exist.
+        """
         _loop_lock = 5
         while self.thread_running:
             _loop_lock -= 1
-            
+
             if _loop_lock > 0:
-                continue        
+                continue
             _loop_lock = 5
-    
+
             if self.unsaved:
                 self.save()
                 self.unsaved = False
-                
+
             time.sleep(1)
-                
+
         self.save()
-        
+
     def create_keyed_alt(self, item):
-        if not self.primary_key: return
-        
+        """
+        Register an item's primary-key value for fast lookup.
+
+        Raises:
+            KeyError: If a duplicate primary key is detected.
+        """
+        if not self.primary_key:
+            return
+
         key = item.get(self.primary_key)
-        if key is None: return
-        
+        if key is None:
+            return
+
         if self.data_keyed.get(key):
             raise KeyError(f"Duplicate primary key for '{key}' in item: {item}")
-        
+
         self.data_keyed[key] = item.get("_id")
 
-    #-----------db operations--------------
+    # ---------- db operations ----------
+
     def create(self, **item):
-        try: json.dumps(item)
-        except TypeError: raise ValueError("Item has to be JSON-serializable")
+        """
+        Insert a new item into the database.
+
+        Args:
+            **item: JSON-serializable fields for the item.
+
+        Returns:
+            str: Generated internal `_id`.
+
+        Raises:
+            ValueError: If the item is not JSON-serializable.
+        """
+        try:
+            json.dumps(item)
+        except TypeError:
+            raise ValueError("Item has to be JSON-serializable")
 
         with self.lock:
             item["_id"] = uuid.uuid4().hex
             self.data[item["_id"]] = item
             self.create_keyed_alt(item)
-            
+            self.unsaved = True
+
             return item["_id"]
 
     def filter(self, func):
+        """
+        Filter items using a predicate function.
+
+        Args:
+            func (Callable): Function that receives an item and returns bool.
+
+        Returns:
+            list: Matching items.
+        """
         out = []
         for item in self.data.values():
-            if func(item): out.append(item)
-        
+            if func(item):
+                out.append(item)
         return out
 
-    def getByProp(self, property: str, value): #O(n)
+    def getByProp(self, property: str, value):
+        """
+        Retrieve the first item where a property matches a value.
+
+        Note:
+            O(n) operation.
+
+        Returns:
+            dict | None
+        """
         with self.lock:
-            for _, item in self.data.items():
+            for item in self.data.values():
                 if item.get(property) == value:
                     return item.copy()
 
-    #using id ----------
+    # ---------- using _id ----------
+
     def getById(self, itemId: str):
+        """
+        Retrieve an item by its internal `_id`.
+
+        Returns:
+            dict | None
+        """
         with self.lock:
             item = self.data.get(itemId)
             return item.copy() if item else None
-    
-    
+
     def setById(self, itemId: str, property: str, value) -> bool:
+        """
+        Update a property on an item by `_id`.
+
+        Returns:
+            bool: True if updated, False if item not found or invalid property.
+        """
         with self.lock:
             self.unsaved = True
 
@@ -128,7 +219,6 @@ class XelDB:
             if not item or property == "_id":
                 return False
 
-            #update primary key
             if self.primary_key and property == self.primary_key:
                 old_key = item.get(self.primary_key)
                 if old_key in self.data_keyed:
@@ -138,8 +228,13 @@ class XelDB:
             item[property] = value
             return True
 
-
     def removeById(self, itemId: str) -> bool:
+        """
+        Remove an item by `_id`.
+
+        Returns:
+            bool: True if removed.
+        """
         with self.lock:
             self.unsaved = True
 
@@ -147,7 +242,6 @@ class XelDB:
             if not item:
                 return False
 
-            #remove primary key index
             if self.primary_key:
                 key = item.get(self.primary_key)
                 if key in self.data_keyed:
@@ -155,17 +249,30 @@ class XelDB:
 
             return True
 
-    #using primary key ----------
+    # ---------- using primary key ----------
+
     def getByKey(self, primary_key):
+        """
+        Retrieve an item using the configured primary key.
+
+        Returns:
+            dict | None
+        """
         with self.lock:
             itemId = self.data_keyed.get(primary_key)
-            if not itemId: return
-            
+            if not itemId:
+                return
+
             item = self.data.get(itemId)
             return item.copy() if item else None
-    
-    
+
     def setByKey(self, primary_key, property: str, value) -> bool:
+        """
+        Update an item using the primary key.
+
+        Returns:
+            bool: True if updated.
+        """
         with self.lock:
             self.unsaved = True
 
@@ -177,7 +284,6 @@ class XelDB:
             if not item or property == "_id":
                 return False
 
-            #update primary key index
             if self.primary_key and property == self.primary_key:
                 del self.data_keyed[primary_key]
                 self.data_keyed[value] = itemId
@@ -185,8 +291,13 @@ class XelDB:
             item[property] = value
             return True
 
-
     def removeByKey(self, primary_key) -> bool:
+        """
+        Remove an item using the primary key.
+
+        Returns:
+            bool: True if removed.
+        """
         with self.lock:
             self.unsaved = True
 

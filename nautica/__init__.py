@@ -18,7 +18,6 @@ from .services.config import ConfigManager
 from .services.eventer import EventManager
 from .services.shell import ShellService
 from .services.database.mongo import MongoDBWrapper
-from .services.sessions import SessionManager
 from .runner import Runner
 
 class Core:
@@ -26,7 +25,6 @@ class Core:
    Eventer = EventManager()
    Config = ConfigManager()
    Shell = ShellService()
-   Sessions = SessionManager(path="sessions")
    Runner = Runner()
    
    MongoDB = MongoDBWrapper(Config, Eventer)

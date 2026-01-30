@@ -14,14 +14,8 @@
             "realIPHeader": null,
             "allowSchemeRequests": true
         },
-        "io": {
-            "enabled": true,
-
-            "host": "0.0.0.0",
-            "port": 8200
-        },
         "ws": {
-            "enabled": true,
+            "enabled": false,
 
             "host": "0.0.0.0",
             "port": 8300
@@ -30,6 +24,9 @@
     "services": {
         "config": {
             "example": "example.template.json"
+        },
+        "sessions": {
+            "enabled": true
         },
         "database": {
             "mongoUri": null
