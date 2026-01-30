@@ -11,4 +11,4 @@ from nautica.api import Config
 
 @Request.GET()
 def test(ctx: Context):
-    return Reply()
+    return

@@ -1,6 +1,6 @@
 from ..logger import LogManager
 from ..database.xeldb import XelDB
-from ...api import Config
+from ... import Core
 
 from ...ext.utils import hashStr, randomStr
 
@@ -36,8 +36,8 @@ class SessionManager:
         Args:
             path (str): Path to the session database (without extension).
         """
-        if not Config.getMaster("services.sessions.enabled"):
-            logger.info("Service disabled")
+        if not Core.Config.getMaster("services.sessions.enabled"):
+            logger.warn("Session service is disabled")
             return
 
         self.db = XelDB(path, primary_key="sessionId")

@@ -32,11 +32,10 @@ NauticaConfigTemplate = {
     "services": {
         "config": {
             # "config_id": "path/to/preset" #config layout/template; path relative to /src/assets
-            "example": "example.config.json"
+            # "example": "example.config.json"
         },
         "sessions": {
             "enabled": True, #whether the session engine will load
-            
         },
         "database": {
             "mongoUri": None #mongodb url to connect to

@@ -1,6 +1,7 @@
 from ...services.logger import LogManager
 from ...ext import utils
 from ...api.http.router import RouteRegistry
+from ...api.http import Error, Reply
 
 import time
 import flask
@@ -202,3 +203,17 @@ def after_req(res):
         logger.error(message)
 
     return res
+
+@App.errorhandler(TypeError)
+def onTypeError(error):
+    logger.trace(error)
+    return Error("Internal server error")
+
+@App.errorhandler(500)
+def onInternalServerError(error):
+    logger.trace(error)
+    return Error("Internal server error")
+
+@App.errorhandler(404)
+def onNotFound(error):
+    return Error("Resource not found")

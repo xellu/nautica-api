@@ -23,10 +23,9 @@
     },
     "services": {
         "config": {
-            "example": "example.template.json"
         },
         "sessions": {
-            "enabled": true
+            "enabled": false
         },
         "database": {
             "mongoUri": null
