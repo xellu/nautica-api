@@ -76,7 +76,7 @@ class HTTPServer:
                             ).replace("]", ">")
         
         for route in RouteRegistry.temp_routes:
-            if route.name_override and utils.hasUnicode(route.name_override, allowed="-_."):
+            if route.name_override and utils.hasUnicode(route.name_override, allowed="-_.<>/"):
                 logger.warn(f"Route '{route_prefix}/{route.name_override}' contains disallowed characters")
                 continue
             
@@ -207,13 +207,13 @@ def after_req(res):
 @App.errorhandler(TypeError)
 def onTypeError(error):
     logger.trace(error)
-    return Error("Internal server error")
+    return Error("Internal server error"), 500
 
 @App.errorhandler(500)
 def onInternalServerError(error):
     logger.trace(error)
-    return Error("Internal server error")
+    return Error("Internal server error"), 500
 
 @App.errorhandler(404)
 def onNotFound(error):
-    return Error("Resource not found")
+    return Error("Resource not found"), 404
