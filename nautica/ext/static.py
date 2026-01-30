@@ -20,13 +20,7 @@ NauticaConfigTemplate = {
             "realIPHeader": None, #header to get real ip, None - use remote_addr, String - header key (e.g. X-Real-IP, True-Client-IP, CF-Connecting-IP) 
             "allowSchemeRequests": True, #allows requests to /nautica:scheme?uri=<route>
         },
-        
-        "io": { #config for socket.io server
-            "enabled": True,
-        
-            "host": "0.0.0.0",
-            "port": 8200
-        },
+
         "ws": { #config for websocket server
             "enabled": True,
             

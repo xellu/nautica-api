@@ -13,7 +13,6 @@ src
 |
 |-routes
 |   |-http (routes pro http server)
-|   |-io (routes pro socket io server)
 |   |-ws (routes pro websocket server)¨
 |   |-... (should match the `nautica/servers` dir)
 |
@@ -27,11 +26,9 @@ nautica
 |-api       - public development interface
 |   |-http 
 |   |-ws
-|   |-io
 |
 |-servers       - internal server code
 |   |-http
-|   |-io
 |   |-ws
 |
 |-services
