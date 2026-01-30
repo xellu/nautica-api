@@ -26,7 +26,7 @@ class Core:
    Eventer = EventManager()
    Config = ConfigManager()
    Shell = ShellService()
-   Sessions = SessionManager()
+   Sessions = SessionManager(path="sessions")
    Runner = Runner()
    
    MongoDB = MongoDBWrapper(Config, Eventer)
@@ -37,15 +37,11 @@ def on_ready():
    Core.Logger.ok("Core initialized")
    
    from .services.eventer import ( builtins )
-   from .services.database.xeldb import XelDB
    
    Core.Shell.import_builtins()
    Core.Runner.start_servers()
    
    Core.MongoDB.start()
-   Core.Sessions.db = XelDB("sessions", "sessionId")
-   
-   Core.Sessions.db.create(sessionId="test", user={"minecraftUuid": "aaa-bbb-ccc-ddd"})
    
    
 Core.Shell.start()

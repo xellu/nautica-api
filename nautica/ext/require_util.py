@@ -68,6 +68,20 @@ class Require:
         
         return Response(data)
 
+    def body_soft(self):
+        data = self.request.get_data(as_text=True)
+
+        try:
+            data = json.loads(data)
+        except:
+            return Response(RawReply())
+        
+        res = self.validate(data, "body")
+        if not res.ok:
+            return res
+        
+        return Response(data)
+
     def headers(self):
         data = self.request.headers
 

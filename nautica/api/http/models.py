@@ -29,7 +29,7 @@ class RequestContextArgs:
         return out
     
     def __str__(self):
-        return f"RequestContextArgs({self.getAll()})"
+        return f"RequestContextArgs({self.toDict()})"
 
 class RequestContext:
     def __init__(self, request: Request, args: RequestContextArgs, created_at=None):

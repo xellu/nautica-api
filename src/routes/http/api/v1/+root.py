@@ -10,6 +10,6 @@ from nautica.api.http import (
 from nautica.api import Config
 
 @Request.GET()
-@Require.query(key=str)
 def test(ctx: Context):
-    return Reply(**Config(ctx.args.query["key"]).data)
+    print(f"{ctx.args}")
+    return Reply(**ctx.args.toDict())

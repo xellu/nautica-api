@@ -7,6 +7,8 @@ from .models import RequestContextArgs
 
 logger = LogManager("API.HTTP.Router")
 
+FIELDS = ["body", "headers", "form", "query", "cookies"]
+
 class RequirementManager:
     def __init__(self):
         """
@@ -51,13 +53,23 @@ class RequirementManager:
         if func not in self.map.keys(): self.map[func] = {} #create a requirement registry if not present
 
         self.map[func][field] = kwargs
+        for f in FIELDS:
+            if self.map[func].get(f) == None:
+                self.map[func][f] = {} #create rest of the fields for them to show up in context.args
         
     def _get_requirements(self, func):
         return self.map.get(func)
     
     def _parse(self, func, request):
         reqs = self._get_requirements(func)
-        if not reqs: return RequestContextArgs() #no args -> empty ctx.args
+        if not reqs:
+            out = RequestContextArgs()
+            for field in FIELDS:
+                r = Require(request)
+                data = getattr(r, "body_soft" if field == "body" else field)()
+                out.set(field, data.content)
+                
+            return out
         
         out = RequestContextArgs()
         for key, value in reqs.items(): #key - field, value - requirements
@@ -65,7 +77,7 @@ class RequirementManager:
             if not hasattr(r, key): #if it tries to read from whatever the fuck knows where (very unlikely)
                 return RequestContextArgs(_ok=False, _error=f"Unknown field '{key}'")
         
-            data = getattr(r, key)()
+            data = getattr(r, "body_soft" if key == "body" and not value else key)()
             if not data.ok: #if requirements don't match
                 return RequestContextArgs(_ok=False, _error=data.content.get("error", f"Failed to retrieve data for field '{key}'"))
             
