@@ -104,6 +104,7 @@ class RemoteAccessHandler:
             await asyncio.sleep(1/4)
         
     def loggerCallback(self, text, json):
+        if not self.authed: return
         self.msg_buffer.append(json)
         
     async def send(self, kwargs):

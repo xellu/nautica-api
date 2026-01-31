@@ -7,11 +7,13 @@ async def on_auth(client: RemoteAccessHandler, payload: dict):
     key = payload.get("accessKey")
     if not key:
         logger.warn(f"{client.ip} attempted to login to remote access, but didn't provide a key")
-        return Error("No access key provided")
+        await client.drop("No access key provided")
+        return
     
     if key not in Core.Config.getMaster("services.remoteAccess.accessKeys"):
         logger.warn(f"{client.ip} attempted to login to remote access, but provided wrong key")
-        return Error("Unauthorized")
+        await client.drop("Unauthorized")
+        return
     
     client.authed = True
     logger.ok(f"{client.ip} logged into remote access")
