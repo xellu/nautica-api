@@ -68,9 +68,9 @@ class WebSocketHandler:
 
             res = await handler(payload)
             if res:
-                await self.send(**res)
+                await self.send(res)
         
-    async def send(self, **kwargs):
+    async def send(self, kwargs):
         logger.debug(f"{self.ip}: POUT -> {self.path} ({kwargs})")
         await self.ws.send(json.dumps(kwargs))
         

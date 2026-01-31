@@ -4,22 +4,22 @@
 | Feature             | Status     |
 |---------------------|------------|
 | HTTP Server         | finished   |
-| SocketIO Server     | WIP        |
-| WebSocket Server    | planned    |
+| SocketIO Server     | finished   |
+| WebSocket Server    | maybe      |
 
 ## App structure
 ```
 src
 |
 |-routes
-|   |-http (routes pro http server)
-|   |-ws (routes pro websocket server)¨
+|   |-http (routes for the HTTP server)
+|   |-ws (routes for the WebSocket server)
 |   |-... (should match the `nautica/servers` dir)
 |
-|-lib (yk shared code nebo neco, jak ve svelte)
+|-lib (shared code)
 ```
 
-## Project Structure
+## API Structure
 ```
 nautica
 |
@@ -38,7 +38,7 @@ nautica
 |   |-logger
 |   |-events
 |   |-sessions
-|   |-ratelimiter
+|   |-ratelimiter (not yet)
 |
 |-ext
 |   |-utils
@@ -48,23 +48,27 @@ nautica
 |-runner
 ```
 
-taklze jak to bude fungovat bro:
-1. preprocessor scanne vsechny files a:
-    - najde vsechny required config keys (zpicuje te jestli tam vsechny nejsou - dynamic config yooo)
-    - processne vsechny library importy
-2. importne to vsechny src routes do server runtimu
-3. startne to servery
-
+## Route Example
 
 `src/routes/http/api/v1/auth.py`
 ```py
 # /api/v1/auth/(func name)
+from nautica.api.http import (
+    Request,
+    Require,
+    Context,
 
-@http.post()
-@ratelimit("12/minute")
-def register(request):
-    return Reply(error="not yet"), 500
+    Reply,
+    Error
+)
+from nautica.api import MongoDB
 
-# HTTP POST to /api/v1/auth/register -> {"error": "not yet"}, code 500
+@Request.POST()
+@Require.body(username=str, password=str)
+def login(ctx: Context):
+    user = MongoDB("test").find_one({"username": ctx.args.body["username"]})
+    if not user or user["password"] != ctx.args.body["password"]:
+        return Error("Access denied"), 401
+
+    return Reply(), 200 #success 
 ```
-*all just flask under the hood*

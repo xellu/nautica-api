@@ -35,10 +35,17 @@ NauticaConfigTemplate = {
             # "example": "example.config.json"
         },
         "remoteAccess": {
-              
+            "enabled": False, #if remote shell access should be enabled
+            "accessKeys": [ #access keys for remote shell
+                "testkey123" 
+            ],
+            
+            #config for remote access server
+            "host": "127.0.0.1",
+            "port": 3711
         },
         "sessions": {
-            "enabled": True, #whether the session engine will load
+            "enabled": False, #whether the session engine will load
         },
         "database": {
             "mongoUri": None #mongodb url to connect to
