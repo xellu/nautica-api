@@ -1,4 +1,0 @@
-ConfigManInstances = []
-EventManInstances = []
-LogManInstances = []
-XelDBInstances = []

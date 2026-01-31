@@ -1,9 +1,0 @@
-{
-    "oauth": {
-        "discord": {
-            "appId": 0,
-            "publicKey": "test123",
-            "secretKey": "secret123"
-        }
-    }
-}
