@@ -1,5 +1,6 @@
 from ..logger import LogManager
 from ... import Core, instances
+from ...services.remoteaccess import RemoteAccess
 from ...ext.procedures import remove_cache
 
 import os
@@ -39,6 +40,8 @@ def shutdown(reason: str = None):
 
     #stop services
     Core.MongoDB.stop()
+    
+    RemoteAccess.stop()
     
     for db in instances.XelDBInstances:
         db.stop()

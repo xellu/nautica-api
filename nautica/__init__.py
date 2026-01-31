@@ -35,14 +35,18 @@ def on_ready():
    Core.Logger.ok("Core initialized")
    
    from .services.eventer import ( builtins )
+   from .services.remoteaccess import RemoteAccess
    from .ext.procedures import createSrcDir
    
    createSrcDir()
    
+   Core.MongoDB.start()
+   
    Core.Shell.import_builtins()
    Core.Runner.start_servers()
    
-   Core.MongoDB.start()
+   RemoteAccess.start()
+   
    
    
 Core.Shell.start()

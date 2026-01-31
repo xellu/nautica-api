@@ -22,6 +22,8 @@ class LogManager:
         self.level: LogLevel = level
         self._path = os.path.join(".logs", log_file)
         
+        self.callbacks = []
+        
         # create logs dir if not exists
         if ".logs" not in os.listdir():
             os.makedirs(".logs", exist_ok = True)
@@ -51,9 +53,10 @@ class LogManager:
         
         #(HH:MM:SS) [SELF.NAME/LEVEL] message
         timestamp = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())
-        if level.value >= self.level.value:
-            color_tag = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[0]
-            color_msg = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[1]
+        color_tag = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[0]
+        color_msg = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[1]
+        
+        if level.value >= self.level.value:    
             # print(f"{level.name} {LevelColors.get(level)}")
             
             print(f"{Fore.LIGHTBLACK_EX}({timestamp}){Fore.RESET} {color_tag}[{self.name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", **kwargs)
@@ -61,6 +64,25 @@ class LogManager:
         with open(self._path, "a", encoding="utf-8") as f:
             f.write(f"({timestamp}) [{self.name.upper()}/{level.name.upper()}] {message}\n")
             f.flush()
+            
+        if level in [LogLevel.DEBUG, LogLevel.SILENT]: return
+        for func in self.callbacks:
+            func(
+                f"({timestamp}) [{self.name.upper()}/{level.name.upper()}] {message}",
+                {
+                    "timestamp": {
+                        "formatted": timestamp,
+                        "raw": time.time()
+                    },
+                    "name": self.name,
+                    "type": level.name,
+                    "message": message,
+                    "colors": {
+                        "name": color_tag,
+                        "message": color_msg
+                    }
+                }    
+            )
         
     def info(self, message: str, *args, **kwargs):
         if not isinstance(message, str): message = str(message)

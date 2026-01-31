@@ -56,6 +56,11 @@ class ShellService:
         
         return out
 
+    def send_command(self, command: str):
+        data = self.parse_data(command)
+        response = self.run_command(data)
+        if response == False:
+            logger.warn(f"Command '{data['command']}' was not found")
 
     def loop(self):
         logger.ok("Shell Service started")
@@ -65,10 +70,7 @@ class ShellService:
                 if command.strip() == "":
                     continue
                 
-                data = self.parse_data(command)
-                response = self.run_command(data)
-                if response == False:
-                    logger.warn(f"Command '{data['command']}' was not found")
+                self.send_command(command)
             
             except KeyboardInterrupt as err:
                 from ... import Core
