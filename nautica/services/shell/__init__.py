@@ -63,6 +63,10 @@ class ShellService:
             logger.warn(f"Command '{data['command']}' was not found")
 
     def loop(self):
+        from ... import Core
+        if Core.Config.getMaster("framework.systemd"):
+            return logger.warn("Running in systemd mode, inputs disabled")
+        
         logger.ok("Shell Service started")
         while self.running:
             try:
@@ -73,11 +77,9 @@ class ShellService:
                 self.send_command(command)
             
             except KeyboardInterrupt as err:
-                from ... import Core
                 Core.Eventer.emit("shutdown", "Requested by Admin")
             
             except Exception as err:
-                from ... import Core
                 if isinstance(err, KeyboardInterrupt) or isinstance(err, SystemExit) or str(err) == "":
                     Core.Eventer.emit("shutdown", "Requested by admin")
                     return

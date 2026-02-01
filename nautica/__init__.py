@@ -1,4 +1,4 @@
-_release = "2.1.0"
+_release = "2.1.1"
 
 from colorama import Fore
 print(f"""{Fore.BLUE}                  
