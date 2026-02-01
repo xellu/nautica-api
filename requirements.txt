@@ -1,0 +1,7 @@
+websockets<11
+pymongo["srv"]
+colorama
+requests
+waitress
+flask
+flask_limiter

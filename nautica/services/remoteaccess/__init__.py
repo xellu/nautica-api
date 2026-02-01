@@ -12,7 +12,7 @@ logger = LogManager("Services.RemoteAccess")
 packet_handlers = {}
 
 class RemoteAccessHandler:
-    def __init__(self, ws, path, parent):
+    def __init__(self, ws: websockets.WebSocketServerProtocol, path, parent):
         self.ws = ws
         self.path = path
         self.parent = parent
@@ -153,7 +153,7 @@ class RemoteAccessServer:
         async with websockets.serve(self.handler, Core.Config.getMaster("services.remoteAccess.host"), Core.Config.getMaster("services.remoteAccess.port")):
             await asyncio.Future()
             
-    async def handler(self, ws, path):
+    async def handler(self, ws: websockets.WebSocketServerProtocol, path: str):
         h = RemoteAccessHandler(ws, path, self)
         self.handlers.append(h)
         
