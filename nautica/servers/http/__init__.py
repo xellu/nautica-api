@@ -4,18 +4,20 @@ from ...api.http.router import RouteRegistry
 from ...api.http import Error, Reply
 
 import time
-import flask
-import waitress
+import uvicorn
 import threading
 
 from ... import Core, _release
 
-from flask import request
+from fastapi import (
+    FastAPI,
+    Request
+)
 from werkzeug.serving import WSGIRequestHandler
 
 logger = LogManager("Servers.HTTP")
 
-App = flask.Flask(__package__)
+App = FastAPI()
 
 realIPHeader = Core.Config.getMaster("servers.http.realIPHeader")
 class HTTPServer:
@@ -83,10 +85,16 @@ class HTTPServer:
             route_name = route_prefix + "/" + (route.name_override or route.func.__name__)
             route_name = route_name.replace("+root/", "")
             
-            rule = App.add_url_rule( #TODO: fix, does not return rule_obj
-                rule = route_name,
-                view_func = route.wrapper,
-                methods = [route.method.upper()]
+            # rule = App.add_url_rule( #does not return rule obj - needs fixing
+            #     rule = route_name,
+            #     view_func = route.wrapper,
+            #     methods = [route.method.upper()]
+            # )
+            rule = App.add_api_route(
+                path = route_name,
+                endpoint = route.wrapper,
+                methods = [ route.method.upper() ],
+                name = route_name
             )
             
             RouteRegistry.routes.append(
@@ -112,39 +120,9 @@ class HTTPServer:
         return len(to_remove)
                 
     def remove_route(self, route: dict):
-        rule_obj = self.get_rule(route)
-        if not rule_obj:
-            return logger.warn(f"Unable to find rule_obj for {route['route']}")
-        endpoint = rule_obj.endpoint
-
-        #remove from view funcs
-        if endpoint in App.view_functions:
-            App.view_functions.pop(endpoint, None)
-            
-        rules_to_delete = [
-            url_rule
-            for url_rule in App.url_map.iter_rules()
-            if url_rule is rule_obj
-            or url_rule.endpoint == endpoint
+        App.router.routes = [
+            r for r in App.router.routes if r.path != route["name"]
         ]
-
-        for url_rule in rules_to_delete:
-            #remove from main list
-            if url_rule in App.url_map._rules:
-                App.url_map._rules.remove(url_rule)
-
-            #remove from endpoints
-            if url_rule.endpoint in App.url_map._rules_by_endpoint:
-                ep_rules = App.url_map._rules_by_endpoint[url_rule.endpoint]
-                if url_rule in ep_rules:
-                    ep_rules.remove(url_rule)
-                    
-                if not ep_rules:
-                    App.url_map._rules_by_endpoint.pop(url_rule.endpoint, None)
-
-        #remove from internal registry
-        if route in RouteRegistry.routes:
-            RouteRegistry.routes.remove(route)
         
     def get_rule(self, route: dict):
         for rule in App.url_map.iter_rules():
@@ -156,23 +134,12 @@ class HTTPServer:
         if Core.Config.getMaster("framework.devMode"):
             logger.warn("Running server in development mode")
 
-            flask.cli.show_server_banner = self._on_load
-            App.run(
-                host = Core.Config.getMaster("servers.http.host"),
-                port = Core.Config.getMaster("servers.http.port"),
-                
-                request_handler = WSGIOverride
-            )
-            return
-        
-        #run in prod using waitress
         self._on_load()
-        waitress.serve(
+        uvicorn.run(
             App,
-            ident=f"NauticaAPI v{_release}",
             
             host = Core.Config.getMaster("servers.http.host"),
-            port = Core.Config.getMaster("servers.http.port"),
+            port = Core.Config.getMaster("servers.http.port"),    
         )
     
     def _on_load(self, *args, **kwargs):
@@ -180,40 +147,63 @@ class HTTPServer:
         logger.ok(f"Listening on port {Core.Config.getMaster("servers.http.port")}")
     
 
-class WSGIOverride(WSGIRequestHandler):
-    #change "Server" header
-    server_version = f"NauticaAPI v{_release}"
-    sys_version = "(DEV)"
-    
-    def log_request(self, code='-', size='-'): pass #disable default logging
-    
-@App.before_request
-def before_req():
-    if realIPHeader is not None:
-        request.remote_addr = request.headers.get(realIPHeader, request.remote_addr)
+@App.middleware("http")
+async def log_middleware(request: Request, call_next):
+    real_ip_header = Core.Config.getMaster("servers.http.realIPHeader")
 
-@App.after_request
-def after_req(res):
-    message = f"{request.remote_addr}: {request.method} -> {request.path} ({res.status_code})"
-    if res.status_code in range(100, 399):
+    if real_ip_header:
+        request.scope["client"] = (
+            request.headers.get(real_ip_header),
+            0
+        )
+
+    response = await call_next(request)
+
+    message = f"{request.client.host}: {request.method} -> {request.url.path} ({response.status_code})"
+
+    if 100 <= response.status_code < 399:
         logger.info(message)
-    elif res.status_code in range(400, 499):
+    elif 400 <= response.status_code < 499:
         logger.warn(message)
-    else: #5XX & unknown
+    else:
         logger.error(message)
 
-    return res
+    return response
 
-@App.errorhandler(TypeError)
-def onTypeError(error):
-    logger.trace(error)
-    return Error("Internal server error"), 500
+# class WSGIOverride(WSGIRequestHandler):
+#     #change "Server" header
+#     server_version = f"NauticaAPI v{_release}"
+#     sys_version = "(DEV)"
+    
+#     def log_request(self, code='-', size='-'): pass #disable default logging
+    
+# @App.before_request
+# def before_req():
+#     if realIPHeader is not None:
+#         request.remote_addr = request.headers.get(realIPHeader, request.remote_addr)
 
-@App.errorhandler(500)
-def onInternalServerError(error):
-    logger.trace(error)
-    return Error("Internal server error"), 500
+# @App.after_request
+# def after_req(res):
+#     message = f"{request.remote_addr}: {request.method} -> {request.path} ({res.status_code})"
+#     if res.status_code in range(100, 399):
+#         logger.info(message)
+#     elif res.status_code in range(400, 499):
+#         logger.warn(message)
+#     else: #5XX & unknown
+#         logger.error(message)
 
-@App.errorhandler(404)
-def onNotFound(error):
-    return Error("Resource not found"), 404
+#     return res
+
+# @App.errorhandler(TypeError)
+# def onTypeError(error):
+#     logger.trace(error)
+#     return Error("Internal server error"), 500
+
+# @App.errorhandler(500)
+# def onInternalServerError(error):
+#     logger.trace(error)
+#     return Error("Internal server error"), 500
+
+# @App.errorhandler(404)
+# def onNotFound(error):
+#     return Error("Resource not found"), 404

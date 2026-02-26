@@ -60,13 +60,13 @@ class RequirementManager:
     def _get_requirements(self, func):
         return self.map.get(func)
     
-    def _parse(self, func, request):
+    async def _parse(self, func, request):
         reqs = self._get_requirements(func)
         if not reqs:
             out = RequestContextArgs()
             for field in FIELDS:
                 r = Require(request)
-                data = getattr(r, "body_soft" if field == "body" else field)()
+                data = await getattr(r, "body_soft" if field == "body" else field)()
                 out.set(field, data.content)
                 
             return out

@@ -1,4 +1,4 @@
-from flask import Request
+from fastapi import Request
 import time
 
 class RequestContextArgs:

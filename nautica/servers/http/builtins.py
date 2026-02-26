@@ -3,19 +3,21 @@ from ... import _release, Core
 from ...api.http import Reply, Error, Request as RouteRegistry, Require as RequirementManager
 from ...ext.require_util import Require 
 
-from flask import request
+from fastapi import Request
+from fastapi.responses import FileResponse
 import inspect
 import os
 
 @App.route("/favicon.ico")
-def favicon():
+async def favicon(req: Request):
     if not os.path.exists("src/assets/favicon.ico"):
         return Error("unavailable"), 404
 
-    return open("src/assets/favicon.ico", "rb").read()
+    # return open("src/assets/favicon.ico", "rb").read()
+    return FileResponse("src/assets/favicon.ico")
 
 @App.route("/nautica:about")
-def about_about():
+async def about_about(req: Request):
     if not Core.Config.getMaster("framework.devMode"): return Reply(), 401
     
     return Reply(
@@ -24,7 +26,7 @@ def about_about():
     )
     
 @App.route("/nautica:routes")
-def about_routes():
+async def about_routes(req: Request):
     if not Core.Config.getMaster("framework.devMode"): return Reply(), 401
     
     service = Core.Runner.servers["http"]
@@ -33,16 +35,20 @@ def about_routes():
     return Reply(count=len(routes), routes=routes)
     
 @App.route("/nautica:remote_addr")
-def about_remote_addr():
+async def about_remote_addr(req: Request):
     if not Core.Config.getMaster("framework.devMode"): return Reply(), 401
     
-    return Reply(ip=request.remote_addr)
+    return Reply(ip=req.scope.get("client")[0])
+    
+@App.route("/nautica:require")
+async def about_require(req: Request):
+    if not Core.Config.getMaster("framework.devMode"): return Reply(), 401
     
 @App.route("/nautica:scheme")
-def about_scheme():
+async def about_scheme(req: Request):
     if not Core.Config.getMaster("servers.http.allowSchemeRequests"): return Reply(), 401
     
-    data = Require(request, uri=str).query()
+    data = await Require(req, uri=str).query()
     if not data.ok: return Reply(**data.content), 400
     
     r = RouteRegistry._getFromName(data.content["uri"])
