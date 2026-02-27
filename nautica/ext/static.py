@@ -54,7 +54,7 @@ NauticaConfigTemplate = {
     }
 }
 
-STATUS_CODES = {
+STATUS_CODES = { #https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
     100: "Continue",
     101: "Switching Protocols",
     102: "Processing",

@@ -49,13 +49,13 @@ async def about_scheme(req: Request):
     if not Core.Config.getMaster("servers.http.allowSchemeRequests"): return JSONResponse(content={}, status_code=401)
     
     data = await Require(req, uri=str).query()
-    if not data.ok: return Reply(**data.content), 400
+    if not data.ok: return JSONResponse(Reply(**data.content), 400)
     
     r = RouteRegistry._getFromName(data.content["uri"])
     if not r:
         return JSONResponse(content=Error("Route not found"), status_code=404)
     
-    req = RequirementManager._get_requirements(inspect.unwrap(r["route"].wrapper))
+    req = RequirementManager._get_requirements(inspect.unwrap(r["route"].func))
     if not req: return JSONResponse(content=Reply()) #no requirements
     
     for field in req.values(): #makes it json serializable (turns classes into strings)
