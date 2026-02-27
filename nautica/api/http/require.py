@@ -77,7 +77,7 @@ class RequirementManager:
             if not hasattr(r, key): #if it tries to read from whatever the fuck knows where (very unlikely)
                 return RequestContextArgs(_ok=False, _error=f"Unknown field '{key}'")
         
-            data = getattr(r, "body_soft" if key == "body" and not value else key)()
+            data = await getattr(r, "body_soft" if key == "body" and not value else key)()
             if not data.ok: #if requirements don't match
                 return RequestContextArgs(_ok=False, _error=data.content.get("error", f"Failed to retrieve data for field '{key}'"))
             

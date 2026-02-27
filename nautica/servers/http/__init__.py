@@ -1,9 +1,11 @@
 from ...services.logger import LogManager
 from ...ext import utils
+from ...ext.static import STATUS_CODES
+from ...ext.logging_patch import PatchLog, LogData
 from ...api.http.router import RouteRegistry
-from ...api.http import Error, Reply
 
 import time
+import logging
 import uvicorn
 import threading
 
@@ -135,11 +137,19 @@ class HTTPServer:
             logger.warn("Running server in development mode")
 
         self._on_load()
+        
+        PatchLog(LogData(logging.getLogger("uvicorn")))
+        PatchLog(LogData(logging.getLogger("uvicorn.error"), rename="Uvicorn"))
+        PatchLog(LogData(logging.getLogger("uvicorn.access")))
+        
         uvicorn.run(
             App,
             
             host = Core.Config.getMaster("servers.http.host"),
-            port = Core.Config.getMaster("servers.http.port"),    
+            port = Core.Config.getMaster("servers.http.port"),   
+            
+            server_header = False,
+            access_log = False
         )
     
     def _on_load(self, *args, **kwargs):
@@ -157,18 +167,19 @@ async def log_middleware(request: Request, call_next):
             0
         )
 
-    response = await call_next(request)
+    res = await call_next(request)
+    res.headers["server"] = f"NauticaAPI v{_release}"
 
-    message = f"{request.client.host}: {request.method} -> {request.url.path} ({response.status_code})"
+    message = f"{request.client.host}: {request.method} -> {request.url.path} ({res.status_code} {STATUS_CODES.get(res.status_code, 'UNKNOWN')})"
 
-    if 100 <= response.status_code < 399:
+    if 100 <= res.status_code < 399:
         logger.info(message)
-    elif 400 <= response.status_code < 499:
+    elif 400 <= res.status_code < 499:
         logger.warn(message)
     else:
         logger.error(message)
 
-    return response
+    return res
 
 # class WSGIOverride(WSGIRequestHandler):
 #     #change "Server" header

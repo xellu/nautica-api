@@ -20,19 +20,19 @@ class Decorator:
 
     def decorator(self, func):
         # @wraps(func)
-        async def wrapper(request: Request, *args, **kwargs):
+        async def wrapper(request: Request):
             from . import Require
 
             created_at = time.time()
             
             requirements = await Require._parse(func, request)
 
-            if not requirements.ok:
+            if not requirements._ok:
                 return JSONResponse(
                     content = {
                         "error": requirements._error
                     },
-                    status_code = 400
+                    status_code = 422
                 )
 
             ctx = RequestContext(
@@ -43,7 +43,7 @@ class Decorator:
             )
 
             try: 
-                res = await maybeAwait(func(ctx, *args, **kwargs))
+                res = await maybeAwait(func(ctx))
 
                 # If your route returned a dict, wrap it in JSONResponse
                 if isinstance(res, dict) or isinstance(res, list):

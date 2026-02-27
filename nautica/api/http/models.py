@@ -36,6 +36,12 @@ class RequestContext:
         self.request = request
         self.args = args
         
+        self.body = args.body
+        self.query = args.query
+        self.cookies = args.cookies
+        self.headers = args.cookies
+        self.form = args.form
+        
         self.created_at = time.time() if not created_at else created_at
         
     def __str__(self): return f"RequestContext({self.args=}, {self.created_at=})"

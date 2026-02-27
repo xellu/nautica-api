@@ -49,7 +49,7 @@ class LogManager:
         
         message = message % args
         for key, value in kwargs.items():
-            message.replace("%{key}%", value)
+            message.replace("%{key}%", str(value))
         
         #(HH:MM:SS) [SELF.NAME/LEVEL] message
         timestamp = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())
@@ -59,7 +59,7 @@ class LogManager:
         if level.value >= self.level.value:    
             # print(f"{level.name} {LevelColors.get(level)}")
             
-            print(f"{Fore.LIGHTBLACK_EX}({timestamp}){Fore.RESET} {color_tag}[{self.name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", **kwargs)
+            print(f"{Fore.LIGHTBLACK_EX}({timestamp}){Fore.RESET} {color_tag}[{self.name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", *args)
         
         with open(self._path, "a", encoding="utf-8") as f:
             f.write(f"({timestamp}) [{self.name.upper()}/{level.name.upper()}] {message}\n")
