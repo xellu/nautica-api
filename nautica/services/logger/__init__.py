@@ -6,6 +6,7 @@ from .tableutil import TableUtil
 import os
 import time
 import traceback
+import threading
 from colorama import Fore
 
 class LogManager:
@@ -21,12 +22,12 @@ class LogManager:
         self.name: str = name
         self.level: LogLevel = level
         self._path = os.path.join(".logs", log_file)
+        self._lock = threading.Lock()
         
         self.callbacks = []
         
         # create logs dir if not exists
-        if ".logs" not in os.listdir():
-            os.makedirs(".logs", exist_ok = True)
+        os.makedirs(".logs", exist_ok=True)
         
         # create log file if not exists
         if not os.path.exists(self._path):
@@ -34,55 +35,56 @@ class LogManager:
             
         LogManInstances.append(self)
             
-    def log(self, message: str, level: LogLevel, *args, **kwargs): 
-        if not isinstance(level, LogLevel):
-            raise TypeError("Logger level is not an instance of LogLevel")
-        
-        if level in [LogLevel.ALL, LogLevel.NONE]:
-            raise ValueError(f"Log level '{level.name}' is not a valid log level for logging messages")
+    def log(self, message: str, level: LogLevel, *args, **kwargs):
+        with self._lock:
+            if not isinstance(level, LogLevel):
+                raise TypeError("Logger level is not an instance of LogLevel")
             
-        if level == LogLevel.DEBUG:
-            from ... import Core
-            if not Core.Config.getMaster("framework.devMode"): return
-        
-        if not isinstance(message, str): message = str(message)
-        
-        message = message % args
-        for key, value in kwargs.items():
-            message.replace("%{key}%", str(value))
-        
-        #(HH:MM:SS) [SELF.NAME/LEVEL] message
-        timestamp = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())
-        color_tag = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[0]
-        color_msg = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[1]
-        
-        if level.value >= self.level.value:    
-            # print(f"{level.name} {LevelColors.get(level)}")
+            if level in [LogLevel.ALL, LogLevel.NONE]:
+                raise ValueError(f"Log level '{level.name}' is not a valid log level for logging messages")
+                
+            if level == LogLevel.DEBUG:
+                from ... import Core
+                if not Core.Config.getMaster("framework.devMode"): return
             
-            print(f"{Fore.LIGHTBLACK_EX}({timestamp}){Fore.RESET} {color_tag}[{self.name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", *args)
-        
-        with open(self._path, "a", encoding="utf-8") as f:
-            f.write(f"({timestamp}) [{self.name.upper()}/{level.name.upper()}] {message}\n")
-            f.flush()
+            if not isinstance(message, str): message = str(message)
             
-        if level in [LogLevel.DEBUG, LogLevel.SILENT]: return
-        for func in self.callbacks:
-            func(
-                f"({timestamp}) [{self.name.upper()}/{level.name.upper()}] {message}",
-                {
-                    "timestamp": {
-                        "formatted": timestamp,
-                        "raw": time.time()
-                    },
-                    "name": self.name,
-                    "type": level.name,
-                    "message": message,
-                    "colors": {
-                        "name": color_tag,
-                        "message": color_msg
-                    }
-                }    
-            )
+            for key, value in kwargs.items():
+                message = message.replace(f"%{key}%", str(value))
+            message = message % args
+            
+            #(HH:MM:SS) [SELF.NAME/LEVEL] message
+            timestamp = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())
+            color_tag = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[0]
+            color_msg = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[1]
+            
+            if level.value >= self.level.value:    
+                # print(f"{level.name} {LevelColors.get(level)}")
+                
+                print(f"{Fore.LIGHTBLACK_EX}({timestamp}){Fore.RESET} {color_tag}[{self.name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", *args)
+            
+            with open(self._path, "a", encoding="utf-8") as f:
+                f.write(f"({timestamp}) [{self.name.upper()}/{level.name.upper()}] {message}\n")
+                f.flush()
+                
+            if level in [LogLevel.DEBUG, LogLevel.SILENT]: return
+            for func in self.callbacks:
+                func(
+                    f"({timestamp}) [{self.name.upper()}/{level.name.upper()}] {message}",
+                    {
+                        "timestamp": {
+                            "formatted": timestamp,
+                            "raw": time.time()
+                        },
+                        "name": self.name,
+                        "type": level.name,
+                        "message": message,
+                        "colors": {
+                            "name": color_tag,
+                            "message": color_msg
+                        }
+                    }    
+                )
         
     def info(self, message: str, *args, **kwargs):
         if not isinstance(message, str): message = str(message)

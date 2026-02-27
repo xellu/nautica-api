@@ -2,14 +2,15 @@ from enum import Enum
 from colorama import Fore
 
 class LogLevel(Enum):
-    INFO = 10
-    OK = 11 #alias: OK = success
-    WARN = 20
-    ERROR = 30
-    CRITICAL = 31 #alias: FATAL = critical
+    DEBUG = 10
+    TRACE = 11
     
-    DEBUG = 40
-    TRACE = 50
+    INFO = 20
+    OK = 21 #alias: OK = success
+    WARN = 30
+    ERROR = 40
+    CRITICAL = 41 #alias: FATAL = critical
+    
     SILENT = -999
     
     #unusable for calling Logger.log
