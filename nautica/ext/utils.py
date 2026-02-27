@@ -1,6 +1,7 @@
 import random
 import string
 import hashlib
+import inspect
 import os
 import re
 import importlib.util
@@ -8,6 +9,12 @@ import importlib.util
 from ..services.logger import LogManager
 
 logger = LogManager("Ext.Utils")
+
+
+async def maybeAwait(result):
+    if inspect.isawaitable(result):
+        return await result
+    return result
 
 def randomStr(length: int=8):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))

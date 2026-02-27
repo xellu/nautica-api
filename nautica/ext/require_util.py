@@ -1,7 +1,6 @@
 import json
 
-import flask
-from flask import make_response, Request
+from fastapi import Request
 
 def RawReply(**kwargs):
     return kwargs
@@ -44,123 +43,71 @@ class Require:
         self.request = request
         self.kwargs = kwargs
 
-    def validate(self, data: dict, _in: str = "field"):
+    async def _get_body(self):
+        try:
+            data = await self.request.json()
+        except:
+            data = {}
+        return data
+
+    async def validate(self, data: dict, _in: str = "field"):
         for k, v in self.kwargs.items():
-            if k not in data.keys():
+            if k not in data:
                 return Response(RawReply(error=f"Missing required value for '{k}' in {_in}"), False)
 
-            if type(data[k]) != v:
-                return Response(RawReply(error=f"Invalid type for '{k}' in {_in}, provided {type(k).__name__} - expected {v.__name__}"), False)
-        
+            if not isinstance(data[k], v):
+                return Response(
+                    RawReply(
+                        error=f"Invalid type for '{k}' in {_in}, provided {type(data[k]).__name__} - expected {v.__name__}"
+                    ),
+                    False
+                )
         return Response({})
 
-    def body(self):
-        data = self.request.get_data(as_text=True)
-
-        try:
-            data = json.loads(data)
-        except:
-            return Response(RawReply(error="A required request field 'body' is missing"), False)    
-        
-        res = self.validate(data, "body")
+    async def body(self):
+        data = await self._get_body()
+        res = await self.validate(data, "body")
         if not res.ok:
             return res
-        
         return Response(data)
 
-    def body_soft(self):
-        data = self.request.get_data(as_text=True)
-
-        try:
-            data = json.loads(data)
-        except:
-            return Response(RawReply())
-        
-        res = self.validate(data, "body")
+    async def body_soft(self):
+        data = await self._get_body()
+        if not data:
+            return Response({})
+        res = await self.validate(data, "body")
         if not res.ok:
             return res
-        
         return Response(data)
 
-    def headers(self):
-        data = self.request.headers
-
-        res = self.validate(data, "headers")
+    async def headers(self):
+        data = dict(self.request.headers)
+        res = await self.validate(data, "headers")
         if not res.ok:
             return res
-        
         return Response(data)
-    
-    def query(self):
-        data = self.request.args
 
-        res = self.validate(data, "query")
+    async def query(self):
+        data = dict(self.request.query_params)
+        res = await self.validate(data, "query")
         if not res.ok:
             return res
-        
         return Response(data)
-    
-    def form(self):
-        data = self.request.form
 
-        res = self.validate(data, "form")
+    async def form(self):
+        form_data = await self.request.form()
+        data = dict(form_data)
+        res = await self.validate(data, "form")
         if not res.ok:
             return res
-        
         return Response(data)
-    
-    def cookies(self):
-        data = self.request.cookies
-        
-        res = self.validate(data, "cookies")
+
+    async def cookies(self):
+        data = dict(self.request.cookies)
+        res = await self.validate(data, "cookies")
         if not res.ok:
             return res
-        
         return Response(data)
-    
-    #legacy code from doorsmc webserver api
-    def _legacyInvalidate(self, payload, **args):
-        """
-        :payload: a payload to check\n:args: keys to check the payload for\n\nChecks if a payload is valid
-        """
-        max_limit = 1024
-
-        for key in args:
-            if key not in payload:
-                return True
-            if type(payload[key]) != args[key]:
-                return True
-            if len(str(payload[key])) > max_limit:
-                return True
-            
-        return False
-
-    def _legacyFetch(self, request):
-        """
-        :request: a flask request object to fetch data from\n\nLoads data from a request
-        """
-        try:
-            data = json.loads(request.get_data())
-            return data
-        except:
-            return {}
-        
-    def bodyLegacy(self):
-        """
-        (!) DEPRECATED: Use .body() instead!!!
-
-        :request: a flask request object to fetch data from\n
-        :args: keys to check the request payload for\n\n
-        Loads data from a request and checks if it is valid (returns None if invalid)\n
-        Example:
-            request body = `{"hello": "world"}`\n
-            `Require(request, hello=str)` -> `{"hello": "world"}`\n
-            `Require(request, world=str)` -> `None`
-        """
-        data = self._legacyFetch(self.request)
-        if self._legacyInvalidate(data, self.kwargs):
-            return None
-        return data
     
 class RequestObjSubstitute:
     def __init__(self):

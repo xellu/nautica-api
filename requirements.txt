@@ -3,5 +3,6 @@ pymongo["srv"]
 colorama
 requests
 waitress
-flask
-flask_limiter
+fastapi
+python-multiform
+uvicorn

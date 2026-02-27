@@ -1,4 +1,4 @@
-from flask import Request
+from fastapi import Request
 import time
 
 class RequestContextArgs:
@@ -35,6 +35,12 @@ class RequestContext:
     def __init__(self, request: Request, args: RequestContextArgs, created_at=None):
         self.request = request
         self.args = args
+        
+        self.body = args.body
+        self.query = args.query
+        self.cookies = args.cookies
+        self.headers = args.cookies
+        self.form = args.form
         
         self.created_at = time.time() if not created_at else created_at
         

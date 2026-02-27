@@ -1,8 +1,10 @@
 import time
-import flask
-from functools import wraps
+import json
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from ...services.logger import LogManager
+from ...ext.utils import maybeAwait
 
 from .models import RequestContext, RouteData
 
@@ -10,41 +12,67 @@ from .models import RequestContext, RouteData
 logger = LogManager("API.HTTP.Router")
     
 class Decorator:
-    def __init__(self, manager, method, name_override):
+    def __init__(self, manager, method: str, name_override: str | None):
         self.manager = manager
         
         self.method = method
         self.name_override = name_override
-        
+
     def decorator(self, func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            from . import Require, Error
+        # @wraps(func)
+        async def wrapper(request: Request):
+            from . import Require
 
             created_at = time.time()
-            request = flask.request
-            requirements = Require._parse(func, request)
             
+            requirements = await Require._parse(func, request)
+
             if not requirements._ok:
-                return Error(requirements._error), 400
-            
+                return JSONResponse(
+                    content = {
+                        "error": requirements._error
+                    },
+                    status_code = 422
+                )
+
             ctx = RequestContext(
                 request = request,
                 args = requirements,
                 
                 created_at = created_at
             )
-                            
-            return func(ctx, *args, **kwargs)
-        
-        # self.manager._create(self.method, wrapper, self.name_override)
+
+            try: 
+                res = await maybeAwait(func(ctx))
+
+                # If your route returned a dict, wrap it in JSONResponse
+                if isinstance(res, dict) or isinstance(res, list):
+                    return JSONResponse(content=res)
+
+                # If your route returned a tuple like (data, status_code)
+                elif isinstance(res, tuple):
+                    content, code = res
+                    if isinstance(content, (dict, list)): return JSONResponse(content=content, status_code=code)
+                    else: return PlainTextResponse(content, status_code=code)
+
+                # If it’s already a Response object
+                return res
+            except Exception as err:
+                logger.trace(err)
+                return JSONResponse(
+                    content = {
+                        "error": str(err)
+                    },
+                    status_code = 500
+                )
+
         self.manager._create(RouteData(
             method = self.method,
             func = func,
             wrapper = wrapper,
             name_override = self.name_override
         ))
-        
+
         return wrapper
     
 class RouteManager:
