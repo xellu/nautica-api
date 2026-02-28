@@ -45,3 +45,5 @@ This makes the code more simple and readable, allowing you to focus on developme
 2. and install it as a system package by using `python3 -m pip install nautica_api-<VERSION>.tar.gz`
 3. Run it with `nautica`, `python3 -m nautica` (or `py -m nautica` on windows)
 
+# Usage
+Documentation can be found here: https://github.com/xellu/nautica-api/wiki
