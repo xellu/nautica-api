@@ -36,9 +36,7 @@ class HTTPServer:
         
         self.active = True
         
-        t = threading.Thread(target=self._run)
-        t.start()
-        self._thread = t
+        self._run()
         
     def preprocessor(self):
         logger.info("Running pre-processor...")
