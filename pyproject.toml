@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nautica-api"
+version = "2.2.1"
+description = "The Everything-you-need API Framework built on top of FastAPI"
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "websockets<11",
+    "pymongo[srv]",
+    "colorama",
+    "requests",
+    "python-multipart"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nautica*"]
+
+[project.scripts]
+nautica = "nautica:main"
