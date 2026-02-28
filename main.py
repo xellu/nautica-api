@@ -2,6 +2,7 @@ from colorama import Fore
 
 try:
     import nautica
+    # nautica.run()
 except Exception as err:
     import traceback
     from nautica.services.logger import LogManager
