@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nautica-api"
-version = "2.2.0"
+version = "2.2.1"
 description = "The Everything-you-need API Framework built on top of FastAPI"
 readme = "README.md"
 requires-python = ">=3.10"
