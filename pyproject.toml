@@ -24,4 +24,4 @@ where = ["."]
 include = ["nautica*"]
 
 [project.scripts]
-nautica = "nautica:main"
+nautica = "nautica:run"

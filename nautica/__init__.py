@@ -17,10 +17,7 @@ class Core:
    Runner = Runner()
    
    MongoDB = MongoDBWrapper(Config, Eventer)
-   
-def main():
-   Core.Logger.info("Running from a system command")
-   
+
 @Core.Eventer.on("ready")
 def on_ready():
    Core.Logger.ok("Core initialized")
