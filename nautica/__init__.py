@@ -1,4 +1,4 @@
-_release = "2.2.1"
+_release = "2.2.2"
 
 from colorama import Fore
 
