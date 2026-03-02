@@ -119,9 +119,9 @@ def nm_http(act="help", *args, **kwargs):
     match act.lower():
         case "info":
             logger.info("HTTP Server Report:")
-            logger.info(f"Status: {'ACTIVE' if Core.Config.getMaster("servers.http.enabled") else 'DISABLED'}")
-            logger.info(f"Host: {Core.Config.getMaster("servers.http.host")}")
-            logger.info(f"Port: {Core.Config.getMaster("servers.http.port")}")
+            logger.info(f"Status: {'ACTIVE' if Core.Config.getMaster('servers.http.enabled') else 'DISABLED'}")
+            logger.info(f"Host: {Core.Config.getMaster('servers.http.host')}")
+            logger.info(f"Port: {Core.Config.getMaster('servers.http.port')}")
             logger.info(f"Routes: {len(RouteRegistry.routes)}")
                     
             

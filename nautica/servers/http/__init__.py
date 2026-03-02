@@ -152,7 +152,7 @@ class HTTPServer:
     
     def _on_load(self, *args, **kwargs):
         Core.Eventer.emit("ready.http", self)
-        logger.ok(f"Listening on port {Core.Config.getMaster("servers.http.port")}")
+        logger.ok(f"Listening on port {Core.Config.getMaster('servers.http.port')}")
     
 
 @App.middleware("http")
