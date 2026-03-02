@@ -29,11 +29,12 @@ def on_ready():
    createSrcDir()
    
    Core.MongoDB.start()
-   
    Core.Shell.import_builtins()
-   Core.Runner.start_servers()
    
    RemoteAccess.start()
+   
+   #make sure this is last, since the http server blocks the main thread
+   Core.Runner.start_servers()
    
 def run():
    print(f"""{Fore.BLUE}                  
