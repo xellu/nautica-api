@@ -15,7 +15,7 @@ from fastapi import (
     FastAPI,
     Request
 )
-from werkzeug.serving import WSGIRequestHandler
+# from werkzeug.serving import WSGIRequestHandler
 
 logger = LogManager("Servers.HTTP")
 

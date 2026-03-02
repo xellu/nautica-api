@@ -4,6 +4,7 @@ import hashlib
 import inspect
 import os
 import re
+import sys
 import importlib.util
 
 from ..services.logger import LogManager
@@ -44,6 +45,10 @@ def walkPath(dir_path: str, include_dirs=False):
 def importModule(path):
     path = os.path.abspath(path)
     name = os.path.splitext(os.path.basename(path))[0]
+
+    cwd = os.getcwd()
+    if cwd not in sys.path:
+        sys.path.insert(0, cwd)
 
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
