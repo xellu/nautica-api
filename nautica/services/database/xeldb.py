@@ -155,8 +155,9 @@ class XelDB:
 
         with self.lock:
             item["_id"] = uuid.uuid4().hex
-            self.data[item["_id"]] = item
             self.create_keyed_alt(item)
+
+            self.data[item["_id"]] = item
             self.unsaved = True
 
             return item["_id"]
