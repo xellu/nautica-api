@@ -39,7 +39,7 @@ class RequestContext:
         self.body = args.body
         self.query = args.query
         self.cookies = args.cookies
-        self.headers = args.cookies
+        self.headers = args.headers
         self.form = args.form
         
         self.created_at = time.time() if not created_at else created_at
