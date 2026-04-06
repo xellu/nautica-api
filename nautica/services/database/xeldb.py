@@ -8,6 +8,8 @@ import uuid
 import time
 import threading
 
+logger = LogManager("Services.Database.XelDB")
+
 #yes i ai-generated the docs
 class XelDB:
     """
@@ -23,7 +25,7 @@ class XelDB:
     - Simple CRUD-style API
     """
 
-    def __init__(self, path, primary_key: str = None):
+    def __init__(self, path, primary_key: str = None, prevent_key_overwrites: bool = False):
         """
         Initialize a database instance.
 
@@ -42,6 +44,7 @@ class XelDB:
 
         self.data = {}         # _id -> item
         self.data_keyed = {}   # primary_key -> _id
+        self.prevent_overwrites = prevent_key_overwrites
 
         if not os.path.exists(self.path):
             _dir = os.path.dirname(self.path)
@@ -129,7 +132,8 @@ class XelDB:
             return
 
         if self.data_keyed.get(key):
-            raise KeyError(f"Duplicate primary key for '{key}' in item: {item}")
+            if self.prevent_overwrites: raise KeyError(f"Duplicate primary key for '{key}' in item id '{item['_id']}'")
+            else: logger.warn(f"Overwritten primary key. Key '{key}' now points to item with id '{item['_id']}'")
 
         self.data_keyed[key] = item.get("_id")
 
