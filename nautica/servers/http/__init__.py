@@ -55,8 +55,9 @@ class HTTPServer:
             logger.warn(f"{len(failed)} Files failed to process:")
             for f in failed:
                 logger.warn(f" - {f}")
-                
-        from . import builtins
+             
+        if not Core.Config.getMaster("servers.http.disableBuiltIns"):   
+            from . import builtins
         
     def preprocess_file(self, path):
         if utils.getExt(path) not in ["py", "pyw"]: return False

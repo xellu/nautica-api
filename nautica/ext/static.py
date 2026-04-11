@@ -20,6 +20,7 @@ NauticaConfigTemplate = {
             
             "realIPHeader": None, #header to get real ip, None - use remote_addr, String - header key (e.g. X-Real-IP, True-Client-IP, CF-Connecting-IP) 
             "allowSchemeRequests": True, #allows requests to /nautica:scheme?uri=<route>
+            "disableBuiltIns": False, #disables ALL builtin /nautica:<path> requests, including scheme requests
         },
 
         "ws": { #config for websocket server
