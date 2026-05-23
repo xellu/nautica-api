@@ -18,7 +18,7 @@ class ServiceRegistry:
         self.instances.add(serv) #doesnt allow duplicates anyway
         # print(self.instances)
         
-        if self.autoStart: serv.onStart()
+        if self.autoStart: serv.onStart(self)
         
     def Cancel(self, serv: Service):
         if serv in self.instances:
@@ -31,5 +31,10 @@ class ServiceRegistry:
     
     def __getitem__(self, serviceName) -> Service | None:
         return self.Get(serviceName)
+    
+    def onStart(self):
+        #import builtins
+        from .builtins.http import (router, server)
+
         
 Registry = Services = ServiceRegistry()

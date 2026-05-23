@@ -20,7 +20,7 @@ class Service:
     
     #service logic------
     
-    def onStart(self):
+    def onStart(self, registry):
         self._isInitialized = True
     
     def onClose(self, reason: str | None):
