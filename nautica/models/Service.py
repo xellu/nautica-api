@@ -27,8 +27,9 @@ class Service:
         if not isinstance(service, type) or not issubclass(service, Service):
             raise TypeError(f"Cannot export non-Service type '{service}'")
         
-        if srcDir:
-            os.makedirs(os.path.join("project/src", srcDir))
+        path = os.path.join("src", str(srcDir))
+        if srcDir and not os.path.exists(path):
+            os.makedirs(path)
         
         s = service()
         s._register()

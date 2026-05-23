@@ -1,4 +1,5 @@
 from ....models.Service import Service
+from ....manager import Logger
 
 class HTTPRouter(Service):
     def __init__(self):

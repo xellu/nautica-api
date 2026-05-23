@@ -1,5 +1,8 @@
 from ..models.Service import Service
-from ..manager import Logger
+from ..manager import Logger, Config
+
+from ..ext.Util import importModule
+import os
 
 class ServiceRegistry:
     def __init__(self):
@@ -34,11 +37,24 @@ class ServiceRegistry:
     def __getitem__(self, serviceName) -> Service | None:
         return self.Get(serviceName)
     
-    def onStart(self):
-        #import builtins
-        from .builtins import http
+    def ImportAll(self):
+        #import builtin services
+        from .builtins import __init__
+        if Config("nautica")["services.http"]: from .builtins import http
+        
         Logger.info("Imported built-in services")
         
+        os.makedirs("plugins", exist_ok=True)
+        
+        imported = 0
+        for f in os.listdir("plugins"): #not using walkPath on purpose
+            if not f.endswith(".py") or os.path.isdir(f): continue
+            
+            importModule(os.path.join("plugins", f))
+            imported += 1
+        Logger.ok(f"Imported {imported} plugins")
+    
+    def onStart(self):
         #run queued services
         for serv in self.startQueue:
             serv._onStart(self)
@@ -46,11 +62,14 @@ class ServiceRegistry:
         self.autoStart = True #enable autostart upon initializing fully
         self.startQueue = []
         
+        Logger.info("All services online")
+        
     def onClose(self, reason: str | None = None):
         Logger.error(f"Stopping all services... {reason=}")
         for serv in self.instances:
             serv._onClose(reason, _avoidUnreg=True)
         
         self.instances = set()
+        Logger.info("All services offline")
         
 Registry = Services = ServiceRegistry()

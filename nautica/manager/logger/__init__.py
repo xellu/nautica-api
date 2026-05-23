@@ -50,7 +50,7 @@ class LogManager:
                 
             if level == LogLevel.DEBUG:
                 from ... import Core
-                if not Core.Config.getMaster("framework.devMode"): return
+                if not Core.Config("nautica")("framework.devMode"): return
             
             if not isinstance(message, str): message = str(message)
             
@@ -91,7 +91,7 @@ class LogManager:
     
     def debug(self, message: str, *args, **kwargs):
         from ... import Core
-        if not Core.Config.getMaster("framework.devMode"): return
+        if not Core.Config("nautica")("framework.devMode"): return
 
         if not isinstance(message, str): message = str(message)        
         for ln in message.splitlines():
