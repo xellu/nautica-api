@@ -1,130 +1,89 @@
-import json
+import tomlkit
+from collections.abc import Mapping
 
 class SubConfig:
-    def __init__(self, path: str, template: dict | None = None, max_retries: int = 3):
-        """
-        Initialize a Config object.
-
-        Args:
-            path (str): The path to the configuration file.
-            template (dict | None): The template for the configuration file.
-
-        Returns:
-            None
-        """
+    def __init__(self, path: str, template: Mapping | None = None, max_retries: int = 3):
         self.fault_retry_threshold = max_retries
         self.fault_retry_count = 0
 
-        self.path = path.replace(".template.json", ".config.json")
+        self.path = path
         self.template = template
 
-        self.data = {}
+        self.data = tomlkit.document()
         self.load()
 
     def load(self):
         from ...manager import Logger as logger
 
-        """
-        Load the configuration data from the file.
-
-        If the file does not exist, it will be created.
-
-        Returns:
-            None
-        """
         try:
-            with open(self.path, 'r') as file:
-                self.data = json.load(file)
+            with open(self.path, "r", encoding="utf-8") as f:
+                self.data = tomlkit.load(f)
 
-        except Exception as e:
+        except Exception:
             self.fault_retry_count += 1
 
             if self.fault_retry_count >= self.fault_retry_threshold:
-                logger.error(f"Unable to load configuration file, automatic overwrite aborted (max retries exceeded)")
+                logger.error("Unable to load configuration file, automatic overwrite aborted (max retries exceeded)")
                 return
 
-            if self.fault_retry_count > 1: logger.warning(f"Unable to load configuration file, attempting automatic overwrite ({self.fault_retry_count}/{self.fault_retry_threshold})")
-            else: logger.info(f"Creating config file at '{self.path}'...")
+            if self.fault_retry_count > 1:
+                logger.warning(f"Unable to load configuration file, attempting automatic overwrite ({self.fault_retry_count}/{self.fault_retry_threshold})")
+            else:
+                logger.info(f"Creating config file at '{self.path}'...")
 
             self.update_keys()
             self.load()
-    
+
     def get(self, key_path, fallback=None):
-        # {
-        #     "framework": {
-        #         "devMode": True
-        #     }
-        # }
-        # .get("framework.devMode") -> True
-        context = self.data.copy() 
-        for i, key in enumerate(key_path.split(".")):
-            if not isinstance(context, dict):
+        context = self.data
+        parts = key_path.split(".")
+        for i, key in enumerate(parts):
+            if not isinstance(context, Mapping):
                 return fallback
-                
-            context = context.get(key, {} if i+1 != len(key_path.split('.')) else fallback)
-            
+            context = context.get(key, {} if i + 1 != len(parts) else fallback)
         return context
-    
+
     def set(self, key_path, value):
-        # .set("framework.devMode", True)
         keys = key_path.split(".")
         context = self.data
 
         for i, key in enumerate(keys):
             if i < len(keys) - 1:
-                if key not in context or not isinstance(context[key], dict):
-                    context[key] = {}
+                if key not in context or not isinstance(context[key], Mapping):
+                    context[key] = tomlkit.table()
                 context = context[key]
             else:
                 context[key] = value
-                
+
         self.save()
-    
-    def __call__(self, key_path):
-        return self.get(key_path)
-    
-    def __getitem__(self, key_path):
-        return self.get(key_path)
-    
-    def __setitem__(self, key_path, value):
-        return self.set(key_path, value)
-    
-    def __str__(self):
-        return str(self.data)
-    
+
     def save(self):
-        """
-        Save the configuration data to the file.
+        with open(self.path, "w", encoding="utf-8") as f:
+            tomlkit.dump(self.data, f)
 
-        Returns:
-            None
-        """
-        with open(self.path, 'w') as file:
-            json.dump(self.data, file, indent=4)
-    
     def verify_keys(self):
-        """
-        Verify that the configuration file is valid.
-
-        Returns:
-            True if the configuration file is valid, otherwise False.
-        """
-
+        if not self.template:
+            return True
         for key in self.template:
             if key not in self.data:
                 return False
-
         return True
-    
+
     def update_keys(self):
-        """
-        Update the configuration file with the keys.
-
-        Returns:
-            None
-        """
-        for key, value in self.template.items():
-            if key not in self.data:
-                self.data[key] = value
-
+        if self.template:
+            for key, value in self.template.items():
+                if key not in self.data:
+                    self.data.add(key, value)
         self.save()
+
+    def __call__(self, key_path):
+        return self.get(key_path)
+
+    def __getitem__(self, key_path):
+        return self.get(key_path)
+
+    def __setitem__(self, key_path, value):
+        return self.set(key_path, value)
+
+    def __str__(self):
+        return tomlkit.dumps(self.data)

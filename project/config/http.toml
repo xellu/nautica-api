@@ -1,0 +1,2 @@
+host = "0.0.0.0" # Use 0.0.0.0 to expose to network, 127.0.0.1 for local development
+port = 8100 # What port to host the server on, 8100 by default

@@ -1,7 +1,5 @@
-ConfigPresetTOML = """\
 [framework]
 devMode = true        # set to false for production
 preloadConfigs = true # will attempt to load all registered configs at startup
 disableCacheFiles = false # will delete __pycache__ and other cache files
 systemd = false       # run in systemd mode (disables shell, uses remote access)
-"""

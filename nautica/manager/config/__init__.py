@@ -1,108 +1,91 @@
-# Config manager
-import json
+import tomlkit
 import os
+from collections.abc import Mapping
 
 from .helper import SubConfig
-from .preset import ConfigPreset
+from .preset import ConfigPresetTOML
+
+CONFIG_FILE = "nautica.config.toml"
 
 class ConfigManager:
     def __init__(self):
         from ...manager import Logger as logger
 
-        self.masterCfg = {}
-        
-        if "nautica.config.json" not in os.listdir("."):
-            logger.warn("Framework configuration file 'nautica.config.json' was not found")
-            
-            f = open("nautica.config.json", "w", encoding="utf-8")
-            f.write(json.dumps(ConfigPreset, indent=4))
-            f.close()
-            
+        self.masterCfg = tomlkit.document()
+
+        if CONFIG_FILE not in os.listdir("."):
+            logger.warn(f"Framework configuration file '{CONFIG_FILE}' was not found")
+
+            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+                f.write(ConfigPresetTOML)
+
             logger.ok("Framework configuration file created")
-            
-        self.masterCfg = json.loads(
-            open("nautica.config.json", "r", encoding="utf-8").read()
-        )
+
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            self.masterCfg = tomlkit.load(f)
+
         self.sub_configs = {}
-        
-        missing = self.getMissingKeys(self.masterCfg, ConfigPreset)
+
+        preset = tomlkit.loads(ConfigPresetTOML)
+        missing = self.getMissingKeys(self.masterCfg, preset)
         if missing:
-            logger.critical(f"Found {len(missing)} missing keys from 'nautica.config.json'")
+            logger.critical(f"Found {len(missing)} missing keys from '{CONFIG_FILE}'")
             for key in missing:
                 logger.critical(f" - {key}")
-                
-            raise EnvironmentError(f"Found missing keys in 'nautica.config.json', which are required for framework functionality: {', '.join(missing)}")
-        
-        self.preload()
-        
-    def preload(self): #preload all configs
-        from ...manager import Logger as logger
+            raise EnvironmentError(f"Found missing keys in '{CONFIG_FILE}', which are required for framework functionality: {', '.join(missing)}")
 
-        if not self.getMaster("framework.preloadConfigs"): return
-        logger.info("Preloading configs...")
-        
-        loaded = 0
-        # for configId in self.getMaster("config").keys():
-        #     try: self(configId)
-        #     except Exception as e: logger.trace(e)
-        #     else: loaded += 1
-                
-        logger.ok(f"Preloaded {loaded} config files")
-                
-    def getMissingKeys(self, source: dict, template: dict, rel_path: list[str] | None = None):
-        rel_path = rel_path if isinstance(rel_path, list) else [] 
-        #^ used to identify what key is missing if nested 
-        #e.g.: {"hello": {"world": {"test": "hai"}}} -> if hello.world.test2 is missing it'll show up as 'hello.world.test2' and not test2 (has context)
-        if not isinstance(source, dict):
-            return [".".join(rel_path) + " (not a dict)"]
-        
+    def getMissingKeys(self, source, template, rel_path: list[str] | None = None):
+        rel_path = rel_path if isinstance(rel_path, list) else []
+        if not isinstance(source, Mapping):
+            return [".".join(rel_path) + " (not a table)"]
+
         missing = []
-        
         for k, v in template.items():
             cur_path = rel_path.copy() + [k]
-            
-            if k not in source.keys():
+            if k not in source:
                 missing.append(".".join(cur_path))
-            
-            if isinstance(v, dict):
+            if isinstance(v, Mapping):
                 missing += self.getMissingKeys(source.get(k), v, rel_path=cur_path)
 
         return missing
-    
+
     def getMaster(self, key_path, fallback=None):
-        # {
-        #     "framework": {
-        #         "devMode": True
-        #     }
-        # }
-        # .getMaster("framework.devMode") -> True
-        context = self.masterCfg.copy() 
-        for i, key in enumerate(key_path.split(".")):
-            if not isinstance(context, dict):
+        context = self.masterCfg
+        parts = key_path.split(".")
+        for i, key in enumerate(parts):
+            if not isinstance(context, Mapping):
                 return fallback
-                
-            context = context.get(key, {} if i+1 != len(key_path.split('.')) else fallback)
-            
+            context = context.get(key, {} if i + 1 != len(parts) else fallback)
         return context
-    
+
+    def setMaster(self, key_path, value):
+        keys = key_path.split(".")
+        context = self.masterCfg
+
+        for i, key in enumerate(keys):
+            if i < len(keys) - 1:
+                if key not in context or not isinstance(context[key], Mapping):
+                    context[key] = tomlkit.table()
+                context = context[key]
+            else:
+                context[key] = value
+
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            tomlkit.dump(self.masterCfg, f)
+
     def __call__(self, configId):
-        path = self.getMaster(f"services.config.{configId}")
-        if not path:
+        if configId not in self.sub_configs:
             raise LookupError(f"Unable to find '{configId}' in configs, is it registered?")
-        
-        if configId in self.sub_configs.keys():
-            return self.sub_configs.get(configId)
-        
-        template_path = os.path.join("src", "assets", path)
-        template = {}
-        
-        template = json.loads(
-            open(template_path, "r", encoding="utf-8").read()
-        )
-        
-        cfg = SubConfig(
-            path = path,
-            template = template
-        )
-        self.sub_configs[configId] = cfg #save instance
-        return cfg
+        return self.sub_configs[configId]
+    
+    def New(self, configId, template):
+        from ...manager import Logger as logger
+
+        configs_dir = "project/config"
+        os.makedirs(configs_dir, exist_ok=True)
+        path = os.path.join(configs_dir, f"{configId}.toml")
+
+        cfg = SubConfig(path=path, template=template)
+        self.sub_configs[configId] = cfg
+
+        logger.ok(f"Registered config '{configId}' at '{path}'")

@@ -1,8 +1,0 @@
-{
-    "framework": {
-        "devMode": true,
-        "preloadConfigs": true,
-        "disableCacheFiles": false,
-        "systemd": false
-    }
-}
