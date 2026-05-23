@@ -8,6 +8,12 @@ class HTTPServer(Service):
         super().__init__()
         
         self.app = Starlette()
+        self.router = None
         
+    def onStart(self, registry):
+        super().onStart(registry)
         
-HTTPServer()
+        # self.router = registry.Get("HTTPRouter")
+        # print(self.router)
+        
+Service.Export(HTTPServer)

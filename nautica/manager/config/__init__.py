@@ -79,6 +79,9 @@ class ConfigManager:
         return self.sub_configs[configId]
     
     def New(self, configId, template):
+        if self.sub_configs.get(configId):
+            raise KeyError(f"Config with id '{configId}' is already registered")
+        
         from ...manager import Logger as logger
 
         configs_dir = "project/config"

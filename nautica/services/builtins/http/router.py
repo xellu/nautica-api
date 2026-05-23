@@ -3,6 +3,8 @@ from ....models.Service import Service
 class HTTPRouter(Service):
     def __init__(self):
         super().__init__()
+    
+    def onStart(self, registry):
+        pass
         
-        
-HTTPRouter()
+Service.Export(HTTPRouter, srcDir = "http")
