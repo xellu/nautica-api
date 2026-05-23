@@ -1,7 +1,0 @@
-websockets<11
-pymongo["srv"]
-colorama
-requests
-fastapi
-python-multipart
-uvicorn
