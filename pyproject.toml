@@ -12,12 +12,14 @@ requires-python = ">=3.10"
 dependencies = [
     "starlette",
     "uvicorn",
-    "colorama"
+    "colorama",
+    "tomlkit",
+    "click"
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["nautica*"]
+include = ["nautica*", "napi*"]
 
 [project.scripts]
 nautica = "nautica.__main__:cli"
