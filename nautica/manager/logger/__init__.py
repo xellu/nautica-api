@@ -3,6 +3,7 @@ from .levels import LogLevel, LevelColors
 from .tableutil import TableUtil
 
 import os
+import sys
 import time
 import traceback
 import threading
@@ -33,12 +34,20 @@ class LogManager:
         # LogManInstances.append(self)
             
     def _caller_name(self) -> str:
-        this_file = os.path.abspath(__file__)
-        for frame_info in inspect.stack():
-            if os.path.abspath(frame_info.filename) != this_file:
-                mod = inspect.getmodule(frame_info[0])
-                return mod.__name__ if mod else os.path.basename(frame_info.filename)
-        return "unknown"
+        # start = time.time()
+        
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        frame = sys._getframe(1)
+        name = "N3"
+        while frame:
+            fname = os.path.abspath(frame.f_code.co_filename)
+            if not fname.startswith(this_dir):
+                name = frame.f_globals.get("__name__", "unknown")
+                break
+            frame = frame.f_back
+        
+        # print(f"Took: {(time.time()-start)*1000:.1f}ms")
+        return name
 
     def log(self, message: str, level: LogLevel, *args, **kwargs):
         with self._lock:
