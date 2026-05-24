@@ -41,9 +41,9 @@ def create(name):
     
     os.makedirs(name)
     os.chdir(name)
-    from .ext.Static import GitIgnore
+    from .ext.Static import GitIgnore, ProjectExample
     
-    for f in [".logs", "config", "plugins", "src"]:
+    for f in [".logs", "config", "plugins", "src/http"]:
         os.makedirs(f, exist_ok=True)
         
     Config.New("nautica",
@@ -54,6 +54,8 @@ def create(name):
     )
     
     with open(".gitignore", "w") as f: f.write(GitIgnore)
+    with open("src/http/+root.py", "w") as f: f.write(ProjectExample)
+    
     
     os.chdir("..")
     if os.path.exists(".logs"):

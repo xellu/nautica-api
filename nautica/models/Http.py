@@ -1,6 +1,7 @@
 from starlette.requests import Request
-from starlette.datastructures import URL, ImmutableMultiDict
+from starlette.datastructures import URL
 from .HttpRequirements import Requirement
+from ..ext.StatusCodes import getMessage
 
 class RouteRequirements:
     """Declares expected type schemas for each part of an incoming request."""
@@ -74,27 +75,25 @@ class RequestContext:
     def __init__(self, request: Request):
         self.request: Request = request
         self.url: URL = request.url
-        self.ip: str | None = request.client.host if request.client else None
+        self.clientIp: str | None = request.client.host if request and request.client else None
 
         self.headers: dict = {}
         self.query: dict = {}
         self.cookies: dict = {}
         self.body: dict = {}
 
-    @staticmethod
-    def builder(**keys: type | Requirement):
-        """Declares the expected shape of a request field as a {key: type} dict."""
-        for v in keys.values():
-            if not (isinstance(v, type) or isinstance(v, Requirement)): raise TypeError(f"Context builder only accepts types and Requirements")
-        return keys
-
 class Reply:
     """Builds an HTTP response body; pass kwargs for JSON or positional args for a JSON array."""
 
     def __init__(self, *array, **json):
+        if array and json:
+            raise TypeError(f"Mixing positional arguments and keyword arguments is not supported")
+        
         self.array = array
-        self.json = json
-        self.headers = {}
+        self.json = json    
+        self.headers = {
+            "Server": "Nautica3"
+        }
         self.cookies = {}
 
     def SetHeader(self, headers: dict):
@@ -105,7 +104,18 @@ class Reply:
         """Returns a Cookie builder for the given cookie name."""
         return Cookie(name, self)
 
-
+class ErrorReply:
+    def __init__(self, status_code: int, message: str | None = None, details: dict | str | None = None):
+        self.status_code = status_code
+        self.message = message
+        self.details = details
+    
+    def toReply(self) -> Reply:
+        return Reply(
+            error = getMessage(self.status_code) if not self.message else self.message,
+            details = self.details or {}
+        )
+    
 class Cookie:
     """Fluent builder for a single Set-Cookie header; call .build() to write it onto the Reply."""
 

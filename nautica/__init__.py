@@ -1,20 +1,12 @@
-_release = "3.0"
+_release = "3.0.0"
+_edition = "InDev"
 
 import os
 from colorama import Fore
+from .ext.Static import banner
 
 def _run():
-    print(f"""{Fore.BLUE}                  
-      &@@@$                                                                                             
-  #@   .@    @=       *****   .***     ****-    ***     **** ************ ****    €&@@$+       ****:    
-  %@:  .@   $@&       @@@@@@  :@@@    &@@@@@.   @@@:    %@@@ @@@@@@@@@@@@ @@@@ :@@@@@@@@@@    $@@@@@=   
- @+ %@@-@-@@$ *@      @@@@@@@ :@@@   -@@@-@@@   @@@:    %@@@     @@@@     @@@@ @@@&    %@@@  .@@@ @@@   
-      .@@@            @@@ $@@@$@@@   @@@- %@@@  @@@:    %@@@     @@@@     @@@@ @@@           @@@+ $@@@  
- @= %@@:@.@@& €@      @@@   @@@@@@  @@@@@@@@@@% @@@@%-=$%@@@     @@@@     @@@@ @@@@:.  %@@@ @@@@@@@@@@% 
-  €@   .@   .@=       @@@    %@@@@ @@@@    $@@@% %@@@@@@@@$      @@@@     @@@@  :@@@@@@@@$ @@@@    $@@@%
-  #@   .@    @=                                                                                         
-      @@@@@           Nautica v{_release}
-{Fore.RESET}""")
+    print(f"{Fore.BLUE}{banner(_release, _edition)}{Fore.RESET}")
     
     from .manager import Config, ConfigBuilder, Logger
 
