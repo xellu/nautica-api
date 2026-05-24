@@ -1,9 +1,15 @@
 from ....ext.Util import maybeAwait
+from ....ext.StatusCodes import StatusCode
 from ....models.Http import PreFlightRouteData, RequestContext, Reply
+from ....models.HttpRequirements import RequirementResponse
+from ....services import Services
+from ....manager import Config, Logger
+from .requirements import RequirementParser
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from functools import wraps
 import inspect
 
 class Decorator:
@@ -14,14 +20,35 @@ class Decorator:
         self.name = name
 
     def decorator(self, func):
+        @wraps(func)
         async def wrapper(request: Request):
+            #create context
             ctx = RequestContext(request)
-
-            if inspect.signature(func).parameters:
-                result = await maybeAwait(func(ctx))
+            
+            route = Services.Get("HTTPRouter").getByFunc(wrapper)
+            if not route: Logger.error(f"Route data for function '{wrapper.__name__}' was not found")
             else:
-                result = await maybeAwait(func())
+                #process requirements
+                args: RequirementResponse = await RequirementParser(route).Extract(request)
+                if not args.ok:
+                    return JSONResponse(content={
+                        "error": "Request does not match a defined scheme",
+                        "details": args.missingData
+                    }, status_code=StatusCode.UNPROCESSABLE_CONTENT)
+                ctx.headers = args.headers
+                ctx.cookies = args.cookies
+                ctx.body = args.body
+                ctx.query = args.query
+                #---------
+            
+            if Config("nautica")["http.realIPHeader"]:
+                ctx.ip = request.headers.get(Config("nautica")["http.realIPHeader"])
 
+            #run request
+            if inspect.signature(func).parameters: result = await maybeAwait(func(ctx))
+            else: result = await maybeAwait(func())
+
+            #construct a reply
             if isinstance(result, Reply):
                 body = list(result.array) if result.array else result.json
                 response = JSONResponse(body)
@@ -36,7 +63,7 @@ class Decorator:
         self.manager.temp.append(PreFlightRouteData(
             func = wrapper,
             method = self.method,
-            name = self.name or func.__name__,
+            name = self.name if self.name else func.__name__,
             requirements = getattr(func, "_requirements", None)
         ))
         return wrapper

@@ -1,8 +1,11 @@
 from starlette.requests import Request
 from starlette.datastructures import URL, ImmutableMultiDict
+from .HttpRequirements import Requirement
 
 class RouteRequirements:
-    def __init__(self, body: dict = None, form: dict = None, headers: dict = None, cookies: dict = None, query: dict = None):
+    """Declares expected type schemas for each part of an incoming request."""
+
+    def __init__(self, body: dict[type] = None, form: dict[type] = None, headers: dict[type] = None, cookies: dict[type] = None, query: dict[type] = None):
         self.body = body or {}
         self.form = form or {}
         self.headers = headers or {}
@@ -15,67 +18,97 @@ class RouteRequirements:
     def getCookies(self): return self.cookies
     def getQuery(self): return self.query
 
+    @staticmethod
+    def typeToString(v):
+        return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)
+
+    def toJson(self):
+        """Returns all requirement fields as a JSON-serializable dict, converting types to their name strings."""
+        def serialize(d: dict):
+            return {k: RouteRequirements.typeToString(v) for k, v in d.items()}
+
+        return {
+            "body": serialize(self.body),
+            "form": serialize(self.form),
+            "headers": serialize(self.headers),
+            "cookies": serialize(self.cookies),
+            "query": serialize(self.query),
+        }
+
 
 class PreFlightRouteData:
+    """Holds route metadata captured at decoration time, before a URL path is assigned."""
+
     def __init__(self, func, method, name, requirements: RouteRequirements | None = None):
         self.func = func
         self.method = method
         self.name = name
         self.requirements = requirements
-        
+
     def getFunc(self): return self.func
     def getMethod(self): return self.method
     def getName(self): return self.name
     def getRequirements(self): return self.requirements
-    
+
+
 class InFlightRouteData:
-    def __init__(self, path, preflight: PreFlightRouteData):
+    """Complete route descriptor built from a PreFlightRouteData and an assigned URL path."""
+
+    def __init__(self, path: str, preflight: PreFlightRouteData, sourceFile: str):
         self.path = path
         self.method = preflight.method
         self.func = preflight.func
         self.requirements = preflight.requirements
-        
-        
+        self.sourceFile = sourceFile
+
     def getFunc(self): return self.func
     def getMethod(self): return self.method
     def getPath(self): return self.path
-    def getRequirements(self) -> RouteRequirements | None: return self.requirements 
+    def getRequirements(self) -> RouteRequirements | None: return self.requirements
+    def getSourceFile(self) -> str: return self.sourceFile
+
 
 class RequestContext:
+    """Wraps a Starlette Request and exposes it to route handlers."""
+
     def __init__(self, request: Request):
         self.request: Request = request
         self.url: URL = request.url
-        
-        # self.headers: ImmutableMultiDict = request.headers
-        # self.query: ImmutableMultiDict = request.query_params
-        # self.cookies: dict = request.cookies
-        # self.body = {}
+        self.ip: str | None = request.client.host if request.client else None
 
-        
+        self.headers: dict = {}
+        self.query: dict = {}
+        self.cookies: dict = {}
+        self.body: dict = {}
+
     @staticmethod
-    def builder(**keys: type):
+    def builder(**keys: type | Requirement):
+        """Declares the expected shape of a request field as a {key: type} dict."""
+        for v in keys.values():
+            if not (isinstance(v, type) or isinstance(v, Requirement)): raise TypeError(f"Context builder only accepts types and Requirements")
         return keys
-    
 
 class Reply:
+    """Builds an HTTP response body; pass kwargs for JSON or positional args for a JSON array."""
+
     def __init__(self, *array, **json):
-        #response body
-        self.array = array #still returns in json format, but as a list
+        self.array = array
         self.json = json
-        
-        #ext
         self.headers = {}
         self.cookies = {}
-        
+
     def SetHeader(self, headers: dict):
+        """Merges the given dict into the response headers."""
         self.headers = headers
-        
+
     def SetCookie(self, name: str):
-        cookie = Cookie(name, self)
-        return cookie
+        """Returns a Cookie builder for the given cookie name."""
+        return Cookie(name, self)
 
 
 class Cookie:
+    """Fluent builder for a single Set-Cookie header; call .build() to write it onto the Reply."""
+
     def __init__(self, name: str, reply: Reply):
         self._name = name
         self._reply = reply
@@ -87,35 +120,20 @@ class Cookie:
         self._http_only: bool = False
         self._same_site: str | None = None
 
-    def value(self, v: str):
-        self._value = v
-        return self
+    def value(self, v: str): return self._set("_value", v)
+    def maxAge(self, seconds: int): return self._set("_max_age", seconds)
+    def path(self, p: str): return self._set("_path", p)
+    def domain(self, d: str): return self._set("_domain", d)
+    def secure(self, v: bool = True): return self._set("_secure", v)
+    def httpOnly(self, v: bool = True): return self._set("_http_only", v)
+    def sameSite(self, v: str): return self._set("_same_site", v)
 
-    def maxAge(self, seconds: int):
-        self._max_age = seconds
-        return self
-
-    def path(self, p: str):
-        self._path = p
-        return self
-
-    def domain(self, d: str):
-        self._domain = d
-        return self
-
-    def secure(self, v: bool = True):
-        self._secure = v
-        return self
-
-    def httpOnly(self, v: bool = True):
-        self._http_only = v
-        return self
-
-    def sameSite(self, v: str):
-        self._same_site = v
+    def _set(self, attr: str, val):
+        setattr(self, attr, val)
         return self
 
     def build(self):
+        """Writes the cookie onto the parent Reply and returns it for further chaining."""
         self._reply.cookies[self._name] = {
             "value": self._value,
             "max_age": self._max_age,
@@ -126,3 +144,5 @@ class Cookie:
             "samesite": self._same_site,
         }
         return self._reply
+    
+#yes i ai generated the docs, i cba to do this shit

@@ -8,6 +8,8 @@ class TableUtil:
         
     def labels(self, values: list[str]):
         self._labels = values
+        
+        return self
     
     def row(self, values: list[str]):
         self._rows.append(values)

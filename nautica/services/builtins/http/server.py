@@ -2,7 +2,8 @@ from ....models.Service import Service
 from ....manager import Config, Logger
 
 from starlette.applications import Starlette
-from starlette.routing import Route
+from starlette.staticfiles import StaticFiles
+from starlette.routing import Route, Mount
 
 from contextlib import asynccontextmanager
 import threading
@@ -50,8 +51,14 @@ class HTTPServer(Service):
         out = []
         for r in self.router.routes:
             out.append(
-                Route(r.getPath(), r.getFunc())
+                Route(r.getPath(), r.getFunc(), methods=[r.getMethod()])
             )
+            
+        if Config("nautica")("http.static.enabled"):
+            out.append(
+                Mount(Config("nautica")["http.static.endpoint"], app=StaticFiles(directory=Config("nautica")["http.static.directory"]))
+            )
+            Logger.ok("Enabled static directory")
         return out
 
 Service.Export(HTTPServer)

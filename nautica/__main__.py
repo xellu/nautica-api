@@ -13,9 +13,13 @@ def run():
     if _run() is False:
         return
     
-    from .services import Registry
-    Registry.ImportAll()
-    Registry.onStart()
+    try:
+        from .services import Registry
+        Registry.ImportAll()
+        Registry.onStart()
+    except Exception as e:
+        from .manager import Logger
+        Logger.trace(e)
     
 @cli.command()
 def load():

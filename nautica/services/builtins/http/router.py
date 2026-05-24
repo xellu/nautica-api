@@ -10,10 +10,26 @@ class HTTPRouter(Service):
     def __init__(self):
         super().__init__()
         
-        self.routes = []
+        self.routes: list[InFlightRouteData] = []
     
-    def pathToRoute(self, text):
-        return text.replace(".py", "").replace("src/http", "")
+    def pathToRoute(self, path):
+        path = path.replace(".py", "").replace("src/http", "")
+        path = path.replace("\\", "/")
+        if os.path.basename(path) == "+root":
+            path = path.split("/")
+            path.remove("+root")
+            path = "/".join(path)
+        return path
+    
+    def getByFunc(self, func):
+        for r in self.routes:
+            if r.getFunc() is func:
+                return r
+    
+    def getByPath(self, path):
+        for r in self.routes:
+            if r.getPath() == path:
+                return r
     
     def onStart(self, registry):
         #import all files
@@ -23,9 +39,14 @@ class HTTPRouter(Service):
             
             importModule(file)
             for PreFlightRoute in Router.temp:
-                path = f"{self.pathToRoute(file)}/{PreFlightRoute.getFunc().__name__}"
+                path = f"{self.pathToRoute(file)}/{PreFlightRoute.getName()}"
+                path = path.replace("//", "/").replace("..", "")
                 
-                route = InFlightRouteData(path, PreFlightRoute)
+                route = InFlightRouteData(
+                    path = path,
+                    preflight = PreFlightRoute,
+                    sourceFile = file
+                )
                 # print(route.getMethod(), route.getPath(), route.getRequirements().getBody())
                 self.routes.append(route)
                 

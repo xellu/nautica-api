@@ -49,8 +49,8 @@ class LogManager:
                 raise ValueError(f"Log level '{level.name}' is not a valid log level for logging messages")
                 
             if level == LogLevel.DEBUG:
-                from ... import Core
-                if not Core.Config("nautica")("framework.devMode"): return
+                from .. import Config
+                if not Config("nautica")("nautica.debug"): return
             
             if not isinstance(message, str): message = str(message)
             

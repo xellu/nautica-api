@@ -3,6 +3,9 @@ from nautica.manager import Logger
 
 from nautica.services.builtins.http.middleware import Decorator
 from nautica.models.Http import RouteRequirements, RequestContext as Context, Reply, Cookie
+from nautica.models import HttpRequirements
+
+Require = HttpRequirements
 
 class RouteManager:
     def __init__(self):
@@ -11,11 +14,6 @@ class RouteManager:
     def _create(self, r):
         self.temp.append(r)
         Logger.debug(f"Registered route for {r.func.__name__}, {r.method=}, {r.name=}")
-
-    def _getFromName(self, name):
-        for r in self.temp:
-            if r["name"].lower() == name:
-                return r
 
     def GET(self, name: str | None = None):
         return Decorator(self, "get", name).decorator
@@ -41,14 +39,13 @@ class RouteManager:
     def PATCH(self, name: str | None = None):
         return Decorator(self, "patch", name).decorator
 
-    def Require(self, body: dict = None, headers: dict = None, cookies: dict = None, query: dict = None, form: dict = None):
+    def Require(self, body: dict = None, headers: dict = None, cookies: dict = None, query: dict = None):
         def decorator(func):
             func._requirements = RouteRequirements(
                 body=body,
                 headers=headers,
                 cookies=cookies,
                 query=query,
-                form=form
             )
             return func
         return decorator
