@@ -17,6 +17,10 @@ class HTTPServer(Service):
         self.router = None
         self.thread = None
         self.server = None
+        
+        
+    def isEnabled(self):
+        return Config("nautica")["services.http"]
 
     def onStart(self, registry):
         super().onStart(registry)

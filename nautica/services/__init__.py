@@ -91,7 +91,12 @@ class ServiceRegistryManager:
 
     def onStart(self):
         for serv in self._topoSort(self._prioritize(self.startQueue)):
+            if not serv.isEnabled():
+                Logger.warn(f"Service disabled: {serv._getName()}")
+                continue #skip disabled services
+    
             serv._onStart(self)
+            Logger.ok(f"Service started: {serv._getName()}")
 
         self.autoStart = True
         self.startQueue = []
@@ -102,6 +107,7 @@ class ServiceRegistryManager:
         Logger.error(f"Stopping all services... {reason=}")
         for serv in self.instances:
             serv._onClose(reason, _avoidUnreg=True)
+            Logger.ok(f"Service stopped: {serv._getName()}")
         
         self.instances = set()
         Logger.info("All services offline")

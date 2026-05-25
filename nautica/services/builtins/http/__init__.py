@@ -22,4 +22,7 @@ class HTTPConfig(Service):
                 .build()
         )
         
+    def isEnabled(self):
+        return Config("nautica")["services.http"]
+    
 Service.Export(HTTPConfig)

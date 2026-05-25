@@ -1,6 +1,6 @@
 from ....models.Service import Service
 from ....models.Http import InFlightRouteData
-from ....manager import Logger
+from ....manager import Logger, Config
 
 from ....ext.Util import walkPath, importModule
 from napi.http import Router
@@ -30,6 +30,9 @@ class HTTPRouter(Service):
         for r in self.routes:
             if r.getPath() == path:
                 return r
+    
+    def isEnabled(self):
+        return Config("nautica")["services.http"]
     
     def onStart(self, registry):
         #import all files

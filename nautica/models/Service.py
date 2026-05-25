@@ -38,11 +38,15 @@ class Service:
 
     def onInstall(self):
         """Called when the service is being installed. Override to add config creation logic, etc."""
+        pass
+    
+    def isEnabled(self):
+        """Return True of False to indicate if the service is enabled"""
+        return True
 
     def _onStart(self, registry):
         self.onStart(registry)
         self._isInitialized = True
-        Logger.ok(f"Service started: {self._getName()}")
 
     def onStart(self, registry):
         """Called when the service is started by the registry. Override to add startup logic."""
@@ -52,7 +56,6 @@ class Service:
         if not _avoidUnreg:
             self._unregister()
         self.onClose(reason)
-        Logger.ok(f"Service stopped: {self._getName()}")
 
     def onClose(self, reason: str | None):
         """Called when the service is stopped. Override to add teardown logic."""
