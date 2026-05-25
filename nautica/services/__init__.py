@@ -104,7 +104,7 @@ class ServiceRegistryManager:
         Logger.info("All services online")
         
     def onClose(self, reason: str | None = None):
-        Logger.error(f"Stopping all services... {reason=}")
+        Logger.info(f"Stopping all services... {reason=}")
         for serv in self.instances:
             serv._onClose(reason, _avoidUnreg=True)
             Logger.ok(f"Service stopped: {serv._getName()}")

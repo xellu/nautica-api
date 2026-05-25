@@ -57,5 +57,25 @@ class RouteManager:
             return func
     
         return decorator
+    
+    def Before(self, fn):
+        def decorator(func):
+            if not hasattr(fn, "_before"):
+                fn._before = []
+            fn._before.append(func)
+            return func
+        return decorator
+
+    def After(self, fn):
+        def decorator(func):
+            if not hasattr(fn, "_after"):
+                fn._after = []
+            fn._after.append(func)
+            return func
+        return decorator
+
+    
+    
+        
 
 HTTP = Router = RouteManager()

@@ -1,8 +1,8 @@
 from starlette.requests import Request
 from starlette.datastructures import URL
-from .HttpRequirements import Requirement
 from ..ext.StatusCodes import getMessage
 
+from ..manager import Logger
 class RouteRequirements:
     """Declares expected type schemas for each part of an incoming request."""
 
@@ -59,8 +59,12 @@ class InFlightRouteData:
         self.path = path
         self.method = preflight.method
         self.func = preflight.func
+        
         self.requirements = preflight.requirements
         self.sourceFile = sourceFile
+
+    def getBeforeHandlers(self): return getattr(self.func, "_before", [])
+    def getAfterHandlers(self): return getattr(self.func, "_after", [])
 
     def getFunc(self): return self.func
     def getMethod(self): return self.method
@@ -75,8 +79,8 @@ class RequestContext:
     def __init__(self, request: Request):
         self.request: Request = request
         self.url: URL = request.url
-        self.clientIp: str | None = request.client.host if request and request.client else None
-
+        self.clientIp: str | None = request.client.host if hasattr(request, "client") else None
+        
         self.headers: dict = {}
         self.query: dict = {}
         self.cookies: dict = {}
@@ -116,8 +120,8 @@ class ErrorReply(Exception):
             status_code: HTTP status code to send (default 400).
             errorMessage: Human-readable error message. Falls back to the status code's standard message if omitted.
             details: Extra context attached to the response body; accepts a dict or string.
-        """
-        self.status_code = status_code
+        """        
+        self.status_code = status_code if isinstance(status_code, int) else 400
         self.message = errorMessage
         self.details = details if (isinstance(details, dict) or isinstance(details, str)) else {}
 

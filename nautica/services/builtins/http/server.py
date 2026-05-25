@@ -1,9 +1,15 @@
 from ....models.Service import Service
 from ....manager import Config, Logger
 
+from .middleware import Middleware
+from ....models.Http import ErrorReply
+from ....ext.StatusCodes import NOT_FOUND
+
 from starlette.applications import Starlette
 from starlette.staticfiles import StaticFiles
 from starlette.routing import Route, Mount
+from starlette.requests import Request
+from starlette.exceptions import HTTPException
 
 from contextlib import asynccontextmanager
 import threading
@@ -30,7 +36,10 @@ class HTTPServer(Service):
         self.app = Starlette(
             debug = Config("nautica")["nautica.debug"],
             routes = self.transformRoutes(),
-            lifespan = self.lifespan
+            lifespan = self.lifespan,
+            exception_handlers = {
+                404: self.handle_404
+            }
         )
         self.thread = t = threading.Thread(target=self._run)
         t.start()
@@ -64,5 +73,10 @@ class HTTPServer(Service):
             )
             Logger.ok("Enabled static directory")
         return out
-
+    
+    async def handle_404(self, request: Request, exc: HTTPException):
+        return Middleware.constructResponse(
+            ErrorReply(NOT_FOUND, details={"exception": str(exc)}).toReply(), NOT_FOUND
+        )
+    
 Service.Export(HTTPServer, depends_on=["HTTPRouter"])
