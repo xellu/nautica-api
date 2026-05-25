@@ -55,4 +55,4 @@ class HTTPRouter(Service):
         
         Logger.info(f"Imported {imported} route files")
         
-Service.Export(HTTPRouter, srcDir = "http")
+Service.Export(HTTPRouter, srcDir = "http", depends_on=["HTTPConfig"])

@@ -30,7 +30,7 @@ class HTTPServer(Service):
         )
         self.thread = t = threading.Thread(target=self._run)
         t.start()
-    
+
     def onClose(self, reason):
         if self.server:
             self.server.should_exit = True
@@ -61,4 +61,4 @@ class HTTPServer(Service):
             Logger.ok("Enabled static directory")
         return out
 
-Service.Export(HTTPServer)
+Service.Export(HTTPServer, depends_on=["HTTPRouter"])

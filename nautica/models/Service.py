@@ -9,6 +9,7 @@ class Service:
     def __init__(self):
         self._instanceId = f"NSI_{randomHex(16)}"
         self._isInitialized = False
+        self._depends_on = []
 
     def _register(self):
         from ..services import Registry
@@ -22,7 +23,7 @@ class Service:
         return type(self).__name__
 
     @staticmethod
-    def Export(service, srcDir: str | None = None):
+    def Export(service, srcDir: str | None = None, depends_on: list[str] = None):
         """Instantiates and registers a Service subclass; creates a src/ directory on disk if provided."""
         if not isinstance(service, type) or not issubclass(service, Service):
             raise TypeError(f"Cannot export non-Service type '{service}'")
@@ -32,7 +33,11 @@ class Service:
             os.makedirs(path)
 
         s = service()
+        s._depends_on = depends_on or []
         s._register()
+
+    def onInstall(self):
+        """Called when the service is being installed. Override to add config creation logic, etc."""
 
     def _onStart(self, registry):
         self.onStart(registry)
@@ -47,7 +52,7 @@ class Service:
         if not _avoidUnreg:
             self._unregister()
         self.onClose(reason)
-        Logger.ok(f"Service stopped {self._getName()}")
+        Logger.ok(f"Service stopped: {self._getName()}")
 
     def onClose(self, reason: str | None):
         """Called when the service is stopped. Override to add teardown logic."""

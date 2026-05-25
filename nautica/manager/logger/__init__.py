@@ -8,6 +8,7 @@ import time
 import traceback
 import threading
 import inspect
+from ..config import ROOT_CONFIGS
 from colorama import Fore
 
 class LogManager:
@@ -23,13 +24,14 @@ class LogManager:
         self.level: LogLevel = level
         self._path = os.path.join(".logs", log_file)
         self._lock = threading.Lock()
-                
-        # create logs dir if not exists
-        os.makedirs(".logs", exist_ok=True)
         
-        # create log file if not exists
-        if not os.path.exists(self._path):
-            open(self._path, "x", encoding="utf-8").close()
+        self._disable_writes = not os.path.exists(ROOT_CONFIGS["nautica"])
+                
+        if not self._disable_writes:
+            #create log file
+            os.makedirs(".logs", exist_ok=True)
+            if not os.path.exists(self._path):
+                open(self._path, "x", encoding="utf-8").close()
             
         # LogManInstances.append(self)
             
@@ -76,11 +78,12 @@ class LogManager:
             if level.value >= self.level.value:
                 print(f"{Fore.LIGHTBLACK_EX}({timestamp}){Fore.RESET} {color_tag}[{name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", *args)
 
+            if self._disable_writes: return
             with open(self._path, "a", encoding="utf-8") as f:
                 f.write(f"({timestamp}) [{name.upper()}/{level.name.upper()}] {message}\n")
                 f.flush()
 
-            if level in [LogLevel.DEBUG, LogLevel.SILENT]: return
+            # if level in [LogLevel.DEBUG, LogLevel.SILENT]: return #?????
         
     def info(self, message: str, *args, **kwargs):
         if not isinstance(message, str): message = str(message)
@@ -100,7 +103,7 @@ class LogManager:
     
     def debug(self, message: str, *args, **kwargs):
         from ... import Core
-        if not Core.Config("nautica")("framework.devMode"): return
+        if not Core.Config("nautica")("nautica.debug"): return
 
         if not isinstance(message, str): message = str(message)        
         for ln in message.splitlines():

@@ -1,23 +1,12 @@
-_release = "3.0.0"
-_edition = "InDev"
+from .ext.Static import RELEASE, EDITION
+from .ext import Util
 
-import os
-from colorama import Fore
-from .ext.Static import banner
+from .manager import Logger, LogLevel
+from .manager import Config, ConfigBuilder
 
-def _run():
-    print(f"{Fore.BLUE}{banner(_release, _edition)}{Fore.RESET}")
-    
-    from .manager import Config, ConfigBuilder, Logger
+from .services import Service, Services
 
-    
-    if not os.path.exists("config/nautica.toml"):
-        Logger.error("Nautica Project not detected, run 'nautica load' to load an existing project, or 'nautica create <name>' to create a new project")
-        return False
-
-    Config.New("nautica",
-        ConfigBuilder()
-            .add("nautica.debug", True, "Enables tools and endpoints useful of debugging")
-            .add("nautica.systemd", False, "Disables the shell service in order to work as a systemd service (Remote Access may be needed)")
-            .build()
-    )
+from . import (
+    models,
+    ext
+)
