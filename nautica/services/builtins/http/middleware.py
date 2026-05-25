@@ -88,15 +88,16 @@ class Middleware:
 
             #run request
             try:
-                if inspect.signature(original).parameters: result = await maybeAwait(original(ctx))
+                sig_params = inspect.signature(original).parameters
+                path_kwargs = {k: v for k, v in request.path_params.items() if k in sig_params}
+                if sig_params: result = await maybeAwait(original(ctx, **path_kwargs))
                 else: result = await maybeAwait(original())
             except Exception as e:
                 return self.handleReply(
-                    ErrorReply(INTERNAL_SERVER_ERROR, "Failed to process your request", str(e)).toReply()
+                    ErrorReply(INTERNAL_SERVER_ERROR, "Failed to process your request", {"exception": str(e)}).toReply()
                 )
 
             #construct a reply-----------------
-            
             try:
                 #any, status_code format
                 if isinstance(result, tuple) and len(result) >= 2:
@@ -108,7 +109,7 @@ class Middleware:
             except Exception as e:
                 Logger.trace(e)
                 return self.handleReply(
-                    ErrorReply(INTERNAL_SERVER_ERROR, "Failed to construct a response for your request", str(e)).toReply()
+                    ErrorReply(INTERNAL_SERVER_ERROR, "Failed to construct a response for your request", {"exception": str(e)}).toReply()
                 )
             
         self.manager.temp.append(PreFlightRouteData(

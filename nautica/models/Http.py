@@ -81,6 +81,8 @@ class RequestContext:
         self.query: dict = {}
         self.cookies: dict = {}
         self.body: dict = {}
+        
+        self.params: dict = request.path_params
 
 class Reply:
     """Builds an HTTP response body; pass kwargs for JSON or positional args for a JSON array."""
