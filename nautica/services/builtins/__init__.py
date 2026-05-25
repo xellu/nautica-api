@@ -11,7 +11,6 @@ class System(Service):
         Config.New("nautica",
             ConfigBuilder()
                 .add("nautica.debug", True, "Enables tools and endpoints useful of debugging")
-                .add("nautica.systemd", False, "Disables the shell service in order to work as a systemd service (Remote Access may be needed)")
                 .build()
         )
         

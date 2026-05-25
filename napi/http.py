@@ -3,12 +3,12 @@ from nautica.manager import Logger
 
 from nautica.services.builtins.http.middleware import Middleware
 from nautica.models.Http import RouteRequirements, RequestContext as Context, Reply, ErrorReply as Error
-from nautica.models import HttpRequirements
+from nautica.models import Requirements
 from nautica.ext import StatusCodes
 
 from starlette.responses import JSONResponse, PlainTextResponse, FileResponse, HTMLResponse, RedirectResponse, StreamingResponse
 
-Require = HttpRequirements
+Require = Requirements
 
 class RouteManager:
     def __init__(self):
@@ -45,7 +45,7 @@ class RouteManager:
     def Require(self, body: dict = None, headers: dict = None, cookies: dict = None, query: dict = None):
         for field in [body or {}, headers or {}, cookies or {}, query or {}]:
             for v in field.values():
-                if not (isinstance(v, type) or isinstance(v, HttpRequirements.Requirement)): raise TypeError(f"Context builder only accepts types and Requirements")
+                if not (isinstance(v, type) or isinstance(v, Requirements.Requirement)): raise TypeError(f"Context builder only accepts types and Requirements")
         
         def decorator(func):
             func._requirements = RouteRequirements(

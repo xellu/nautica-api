@@ -3,7 +3,7 @@ from starlette.datastructures import URL
 from ..ext.StatusCodes import getMessage
 from starlette.responses import Response
 
-from ..manager import Logger
+import time
 class RouteRequirements:
     """Declares expected type schemas for each part of an incoming request."""
 
@@ -90,6 +90,7 @@ class RequestContext:
         self.params: dict = request.path_params
         
         self.response: Response | None = None 
+        self.created_at = time.time()
 
 class Reply:
     """Builds an HTTP response body; pass kwargs for JSON or positional args for a JSON array."""

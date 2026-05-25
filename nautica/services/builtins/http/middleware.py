@@ -1,7 +1,7 @@
 from ....ext.Util import maybeAwait
 from ....ext.StatusCodes import *
 from ....models.Http import PreFlightRouteData, RequestContext, Reply, ErrorReply, InFlightRouteData
-from ....models.HttpRequirements import RequirementResponse
+from ....models.Requirements import RequirementResponse
 from ....services import Services
 from ....manager import Config, Logger
 from .requirements import RequirementParser
@@ -129,15 +129,8 @@ class Middleware:
     
 
             #run request
-            ctx.response = await self.run_handler(original, request, ctx)
-            
-            #run after request handlers
-            for handler in route.getAfterHandlers():
-                self.run_handler(handler, request, ctx)
-                
-            #construct a reply-----------------
             try:
-                return self.constructResponse(ctx.response, 200)
+                ctx.response = self.constructResponse( await self.run_handler(original, request, ctx) )
             except Exception as e:
                 Logger.trace(e)
                 return self.handleReply(
@@ -148,6 +141,20 @@ class Middleware:
                     status_code = INTERNAL_SERVER_ERROR
                     # ErrorReply(INTERNAL_SERVER_ERROR, "Failed to construct a response for your request", ).toReply()
                 )
+            
+            
+            #run after request handlers
+            for handler in route.getAfterHandlers():
+                self.run_handler(handler, request, ctx)
+            
+            #return a constructed reply and log results
+            log_msg = f"{ctx.clientIp}: {ctx.request.method.upper()} -> {request.url.path} ({ctx.response.status_code} {getMessage(ctx.response.status_code)})"
+            if isSuccess(ctx.response.status_code): Logger.ok(log_msg)
+            elif isClientError(ctx.response.status_code): Logger.warn(log_msg)
+            elif isServerError(ctx.response.status_code): Logger.error(log_msg)
+            else: Logger.info(log_msg)
+            
+            return ctx.response
                 
         self.manager.temp.append(PreFlightRouteData(
             func = wrapper,

@@ -1,5 +1,5 @@
 from ....models.Http import InFlightRouteData, RouteRequirements
-from ....models.HttpRequirements import RequirementResponse, Requirement
+from ....models.Requirements import RequirementResponse, Requirement
 from starlette.requests import Request
 
 class ErrorDetails:

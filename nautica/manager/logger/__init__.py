@@ -34,6 +34,11 @@ class LogManager:
                 open(self._path, "x", encoding="utf-8").close()
             
         # LogManInstances.append(self)
+        
+        #aliases----
+        self.ok = self.success
+        self.warning = self.warn
+        self.fatal = self.critical
             
     def _caller_name(self) -> str:
         # start = time.time()
@@ -50,6 +55,16 @@ class LogManager:
         
         # print(f"Took: {(time.time()-start)*1000:.1f}ms")
         return name
+
+    def _shorten_name(self, name) -> str:
+        if len(name) <= 16: return name
+        
+        n = name.split(".")
+        name = []
+        for i, part in enumerate(n):
+            if i == 0 or i == len(n)-1: name.append(part)
+            else: name.append(part[:3]) 
+        return ".".join(name)
 
     def log(self, message: str, level: LogLevel, *args, **kwargs):
         with self._lock:
@@ -71,12 +86,15 @@ class LogManager:
             
             #(HH:MM:SS) [MODULE/LEVEL] message
             name = self._caller_name()
+            short_name = self._shorten_name(name)
+            
             timestamp = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())
+            short_timestamp = time.strftime("%H:%M:%S", time.localtime())
             color_tag = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[0]
             color_msg = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[1]
 
             if level.value >= self.level.value:
-                print(f"{Fore.LIGHTBLACK_EX}({timestamp}){Fore.RESET} {color_tag}[{name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", *args)
+                print(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", *args)
 
             if self._disable_writes: return
             with open(self._path, "a", encoding="utf-8") as f:
@@ -94,7 +112,6 @@ class LogManager:
         if not isinstance(message, str): message = str(message)
         for ln in message.splitlines():
             self.log(ln, LogLevel.WARN, *args, **kwargs)
-    warning = warn
     
     def error(self, message: str, *args, **kwargs):
         if not isinstance(message, str): message = str(message)
@@ -113,13 +130,11 @@ class LogManager:
         if not isinstance(message, str): message = str(message)
         for ln in message.splitlines():
             self.log(ln, LogLevel.CRITICAL, *args, **kwargs)
-    fatal = critical
 
     def success(self, message: str, *args, **kwargs):
         if not isinstance(message, str): message = str(message)
         for ln in message.splitlines():
             self.log(ln, LogLevel.OK, *args, **kwargs)
-    ok = success
         
     def _trace(self, message: str, *args, **kwargs):
         if not isinstance(message, str): message = str(message)
