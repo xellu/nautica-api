@@ -2,7 +2,9 @@ from ..models.Service import Service
 from ..manager import Logger, Config
 
 from ..ext.Util import importModule
+
 import os
+import time
 
 class ServiceRegistryManager:
     def __init__(self):
@@ -10,6 +12,8 @@ class ServiceRegistryManager:
         
         self.autoStart = False
         self.startQueue = []
+        
+        self.should_exit = False
         
     def Create(self, serv: Service):
         if not isinstance(serv, Service):
@@ -103,6 +107,10 @@ class ServiceRegistryManager:
 
         Logger.info("All services online")
         
+        while True:
+            if self.should_exit: break
+            time.sleep(0.1) #keep main thread from exiting
+        
     def onClose(self, reason: str | None = None):
         Logger.info(f"Stopping all services... {reason=}")
         for serv in self.instances:
@@ -110,6 +118,7 @@ class ServiceRegistryManager:
             Logger.ok(f"Service stopped: {serv._getName()}")
         
         self.instances = set()
+        self.should_exit = True
         Logger.info("All services offline")
         
 Registry = Services = ServiceRegistryManager()

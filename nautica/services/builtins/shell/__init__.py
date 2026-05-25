@@ -4,8 +4,13 @@ from ....manager import Config, ConfigBuilder, Logger, LogLevel
 from ....services import Services
 from ....ext.Util import maybeAwait
 
+from .gui import GUI
+
+import os
+import sys
 import asyncio
 import threading
+import pyreadline3
 
 class Shell(Service):
     def __init__(self):
@@ -13,7 +18,6 @@ class Shell(Service):
         
         self.should_exit = False
         self._loop = None
-        self.thread = None
         
         self.handlers = {
             # "command name": ShellCommand
@@ -25,25 +29,36 @@ class Shell(Service):
                 .add("services.shell", True, comment="Enables command execution and console input")
                 .add("shell.systemdMode", False, comment="Disables console input, to work as a systemd service")
                 .add("shell.gui", False, comment="Whether to use textual TUI renderer")
+                .add("shell.guiTheme", "frost", comment="Available themes are: frost (default), catppuccin, nord, gruvbox, tokyo-night, textual-dark, solarized-light, atom-one-dark, atom-one-light")
                 .build()
         )
         
     def isEnabled(self):
         return Config("nautica")["services.shell"]
     
-    def onStart(self, registry): #                    dont change ---v
-        self.thread = t = threading.Thread(target=self._run, daemon=True)
-        t.start()
-        
+    def onStart(self, registry):
+        #import builtin commands
         from .commands import (
             basic
         )
-    
+            
+        if Config("nautica")["shell.gui"]:
+            threading.Thread(target=self._run_gui).start()
+        else:
+            #                           dont change ---v
+            threading.Thread(target=self._run, daemon=True).start()
+
     def onClose(self, reason):
         self.should_exit = True
+        if Config("nautica")["shell.gui"]:
+            GUI.exit()
     
     def _run(self):
         asyncio.run(self.loop())
+    
+    def _run_gui(self):
+        GUI.run()
+        Services.onClose("Shell exited")
     
     @staticmethod
     def parse_command(command: str) -> dict:
@@ -102,6 +117,7 @@ class Shell(Service):
         # Logger.ok("Shell running")
         systemd = Config("nautica")("shell.systemdMode")
         self._loop = asyncio.get_event_loop()
+        
         while True:
             try:
                 if self.should_exit: break
