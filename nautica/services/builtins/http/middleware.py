@@ -72,7 +72,7 @@ class Middleware:
                 if not args.ok:
                     return self.handleReply(
                         ErrorReply(errorMessage = "Request does not match a defined schema", details=args.missingData).toReply(),
-                        status_code = INTERNAL_SERVER_ERROR #dont provide error reply with status code directly, it does not handleReply, nor toReply handle that
+                        status_code = UNPROCESSABLE_CONTENT #dont provide error reply with status code directly, it does not handleReply, nor toReply handle that
                     )
                 ctx.headers = args.headers
                 ctx.cookies = args.cookies

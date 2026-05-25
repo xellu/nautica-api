@@ -28,4 +28,8 @@ class System(Service):
                 .build()
         )
         
+    def onStart(self, registry):
+        self.onInstall() #just to initialize the config files
+        
+        
 Service.Export(System)
