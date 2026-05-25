@@ -7,7 +7,9 @@ A lightweight Python API framework built on [Starlette](https://www.starlette.io
 ## Installation
 
 ```bash
-pip install nautica
+git clone https://github.com/xellu/nautica-api.git
+cd nautica-api
+pip install .
 ```
 
 ---
