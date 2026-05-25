@@ -101,18 +101,43 @@ class Reply:
     def SetHeader(self, headers: dict):
         """Merges the given dict into the response headers."""
         self.headers = headers
+        return self
 
     def SetCookie(self, name: str):
         """Returns a Cookie builder for the given cookie name."""
         return Cookie(name, self)
 
-class ErrorReply:
-    def __init__(self, status_code: int, message: str | None = None, details: dict | str | None = None):
+class ErrorReply(Exception):
+    """Represents an HTTP error response. Can be returned or raised from a handler."""
+
+    def __init__(self, status_code: int = 400, errorMessage: str | None = None, details: dict | str | None = None):
+        """
+        Args:
+            status_code: HTTP status code to send (default 400).
+            errorMessage: Human-readable error message. Falls back to the status code's standard message if omitted.
+            details: Extra context attached to the response body; accepts a dict or string.
+        """
         self.status_code = status_code
-        self.message = message
-        self.details = details
-    
+        self.message = errorMessage
+        self.details = details if (isinstance(details, dict) or isinstance(details, str)) else {}
+
+    def SetStatus(self, status_code: int):
+        """Set the HTTP status code. Returns self for chaining."""
+        self.status_code = status_code
+        return self
+
+    def SetError(self, errorMessage: str | None):
+        """Override the error message. Returns self for chaining."""
+        self.message = errorMessage
+        return self
+
+    def SetDetails(self, details: dict | str | None):
+        """Attach extra detail to the response body. Returns self for chaining."""
+        self.details = details if (isinstance(details, dict) or isinstance(details, str)) else {}
+        return self
+
     def toReply(self) -> Reply:
+        """Convert to a Reply suitable for sending as a JSON response body."""
         return Reply(
             error = getMessage(self.status_code) if not self.message else self.message,
             details = self.details or {}

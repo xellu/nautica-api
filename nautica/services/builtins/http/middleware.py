@@ -36,8 +36,9 @@ class Middleware:
         if isinstance(result, Reply):
             return self.handleReply(result, status_code)
         
-        if isinstance(result, ErrorReply):
-            return self.handleReply(ErrorReply.toReply(), result.status_code)
+        if isinstance(result, ErrorReply): #removed, use raise Error() instead
+            # return self.handleReply(result.toReply(), result.status_code)
+            raise TypeError(f"Unable to serialize ErrorReply. Raise instead of returning an error")
         
         #Handle starlette responses
         if type(result) in [JSONResponse, PlainTextResponse, FileResponse, HTMLResponse, RedirectResponse, StreamingResponse]:
@@ -69,12 +70,9 @@ class Middleware:
                 #process requirements
                 args: RequirementResponse = await RequirementParser(route).Extract(request)
                 if not args.ok:
-                    # return JSONResponse(content={
-                    #     "error": "Request does not match a defined scheme",
-                    #     "details": args.missingData
-                    # }, status_code=UNPROCESSABLE_CONTENT)
                     return self.handleReply(
-                        ErrorReply(UNPROCESSABLE_CONTENT, "Request does not match a defined schema", details=args.missingData).toReply()
+                        ErrorReply(errorMessage = "Request does not match a defined schema", details=args.missingData).toReply(),
+                        status_code = INTERNAL_SERVER_ERROR #dont provide error reply with status code directly, it does not handleReply, nor toReply handle that
                     )
                 ctx.headers = args.headers
                 ctx.cookies = args.cookies
@@ -92,9 +90,16 @@ class Middleware:
                 path_kwargs = {k: v for k, v in request.path_params.items() if k in sig_params}
                 if sig_params: result = await maybeAwait(original(ctx, **path_kwargs))
                 else: result = await maybeAwait(original())
+            except ErrorReply as e:
+                return self.handleReply(e.toReply(), e.status_code)
+            
             except Exception as e:
                 return self.handleReply(
-                    ErrorReply(INTERNAL_SERVER_ERROR, "Failed to process your request", {"exception": str(e)}).toReply()
+                    ErrorReply(
+                        errorMessage = "Failed to process your request",
+                        details = {"exception": str(e)}
+                    ).toReply(),
+                    status_code = INTERNAL_SERVER_ERROR
                 )
 
             #construct a reply-----------------
@@ -109,7 +114,12 @@ class Middleware:
             except Exception as e:
                 Logger.trace(e)
                 return self.handleReply(
-                    ErrorReply(INTERNAL_SERVER_ERROR, "Failed to construct a response for your request", {"exception": str(e)}).toReply()
+                    ErrorReply(
+                        errorMessage  ="Failed to construct a response for your request",
+                        details = {"exception": str(e)}
+                    ).toReply(),
+                    status_code = INTERNAL_SERVER_ERROR
+                    # ErrorReply(INTERNAL_SERVER_ERROR, "Failed to construct a response for your request", ).toReply()
                 )
             
         self.manager.temp.append(PreFlightRouteData(

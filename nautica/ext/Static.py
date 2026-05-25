@@ -249,7 +249,7 @@ async def create_user(ctx: Context):
     age = ctx.body["age"]
 
     if name in DATASET:
-        return Error(StatusCodes.CONFLICT, f"User '{name}' already exists")
+        raise Error(StatusCodes.CONFLICT, f"User '{name}' already exists")
 
     DATASET[name] = {"age": age, "hobbies": ["Debugging"]}
     return Reply(), StatusCodes.CREATED
