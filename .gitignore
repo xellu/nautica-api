@@ -13,6 +13,7 @@ __pycache__/
 src/
 plugins/
 config/
+.logs/
 
 # Distribution / packaging
 .Python
