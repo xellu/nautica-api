@@ -129,7 +129,7 @@ class Middleware:
     
 
             #run request
-            result = await self.run_handler(original, request, ctx)
+            ctx.response = await self.run_handler(original, request, ctx)
             
             #run after request handlers
             for handler in route.getAfterHandlers():
@@ -137,7 +137,7 @@ class Middleware:
                 
             #construct a reply-----------------
             try:
-                return self.constructResponse(result, 200)
+                return self.constructResponse(ctx.response, 200)
             except Exception as e:
                 Logger.trace(e)
                 return self.handleReply(

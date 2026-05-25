@@ -1,6 +1,7 @@
 from starlette.requests import Request
 from starlette.datastructures import URL
 from ..ext.StatusCodes import getMessage
+from starlette.responses import Response
 
 from ..manager import Logger
 class RouteRequirements:
@@ -87,6 +88,8 @@ class RequestContext:
         self.body: dict = {}
         
         self.params: dict = request.path_params
+        
+        self.response: Response | None = None 
 
 class Reply:
     """Builds an HTTP response body; pass kwargs for JSON or positional args for a JSON array."""
