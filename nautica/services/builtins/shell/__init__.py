@@ -6,8 +6,6 @@ from ....ext.Util import maybeAwait
 
 from .gui import GUI
 
-import os
-import sys
 import asyncio
 import threading
 import pyreadline3

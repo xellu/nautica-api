@@ -105,4 +105,28 @@ HomePage #log {
     border: round $secondary;
     background: $background;
 }
+
+/* Auto Complete */
+CommandInput {
+    height: auto;
+    width: 1fr;
+}
+
+#cmd-input {
+    height: 1;
+    border: none;
+    width: 1fr;
+}
+
+#suggestions {
+    layer: above;
+    padding: 0;
+    dock: bottom;
+    margin-bottom: 2;
+    margin-left: 1;
+    width: 50%;
+    
+    display: none;
+    border: none;
+}
 """

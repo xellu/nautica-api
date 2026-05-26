@@ -1,5 +1,5 @@
 from textual.containers import Container, VerticalScroll, HorizontalGroup, VerticalGroup
-from textual.widgets import Static, Input, Checkbox, DataTable
+from textual.widgets import Static, Input, Checkbox, DataTable, OptionList
 from textual.widgets.data_table import RowKey
 
 from textual import on
@@ -10,31 +10,34 @@ import asyncio
 
 from ......manager import Logger, LogMemory, Config
 from ......services import Services
-from ..autocomplete import ShellSuggester
+from ..autocomplete import CommandInput
 
 TABLE_ROWS = [
     ("Time", "Module", "Level", "Content")
 ]
 
 class HomePage(Container):    
-    def compose(self):               
+    def compose(self):       
         with HorizontalGroup(id="home-container"):
             yield VerticalScroll(id="log")
             with VerticalGroup(id="thread-container"):
                 yield DataTable(id="threads")
                 yield DataTable(id="threadsAsync")
         
+        
         with HorizontalGroup(id="log-footer"):
-            yield Input(id="log-input", placeholder="Send a command", suggester=ShellSuggester())
+            yield CommandInput(self)
             yield Checkbox("Auto Scroll", id="log-autoscroll", classes="checkbox-sm")
             yield Checkbox("Threads", id="home-threads", classes="checkbox-sm")
+            
+        yield OptionList(id="suggestions")
         
     def on_mount(self):
         self.mirror = LogMemory.CreateMirror()
         self.autoScroll = Config("shell-gui")("home.logScroll")
         
         #logs
-        self.query_one("#log-input", Input).focus()
+        # self.query_one("#log-input", Input).focus()
         self.query_one("#log-autoscroll", Checkbox).value = self.autoScroll
         
         #threads
@@ -142,7 +145,7 @@ class HomePage(Container):
     def handle_threads_toggle(self, event: Checkbox.Changed):
         self.query_one("#thread-container").styles.display = "block" if event.value else "none"
         
-    @on(Input.Submitted, "#log-input")
+    @on(Input.Submitted, "#cmd-input")
     async def handle_run_command(self, event: Input.Submitted):
         event.input.value = ""
         
@@ -163,3 +166,8 @@ class HomePage(Container):
 
             if res: Logger.ok(res)
             
+    @on(OptionList.OptionSelected, "#suggestions")
+    def handle_suggestion_selected(self, event: OptionList.OptionSelected):
+        cmd = self.query_one(CommandInput)
+        cmd.apply_suggestion(str(event.option.prompt))
+        self.query_one("#cmd-input", Input).focus()
