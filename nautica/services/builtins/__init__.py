@@ -28,7 +28,9 @@ class System(Service):
         )
         
     def onStart(self, registry):
-        self.onInstall() #just to initialize the config files
+        # self.onInstall() #just to initialize the config files
+        # ^not needed anymore, onInstall is called ONCE, when server is starting
+        ...
         
         
 Service.Export(System)

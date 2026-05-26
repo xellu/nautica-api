@@ -13,7 +13,8 @@ from .pages import (
 )
 
 PAGES = [
-    "home"
+    "overview",
+    "test"
 ]
 
 class Header(Container):
@@ -33,12 +34,13 @@ class N3GUI(App):
         self.register_theme(catppuccinTheme)
         self.theme = theme
 
-        self.query_one("#header").border_title = f"Nautica v{RELEASE}"
+        self.query_one("#header").border_title = f"[ Nautica v{RELEASE} ]"
 
     def compose(self) -> ComposeResult:
         yield Header(id="header")
-        with ContentSwitcher(initial="page-home"):
-            yield home.HomePage(id="page-home", classes="page")
+        with ContentSwitcher(initial="page-overview"):
+            yield home.HomePage(id="page-overview", classes="page")
+            yield home.HomePage(id="page-test", classes="page")
 
     def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
         if event.tab and event.tab.id:

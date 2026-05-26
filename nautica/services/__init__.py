@@ -99,6 +99,7 @@ class ServiceRegistryManager:
                 Logger.warn(f"Service disabled: {serv._getName()}")
                 continue #skip disabled services
     
+            serv.onInstall()
             serv._onStart(self)
             Logger.ok(f"Service started: {serv._getName()}")
 

@@ -35,9 +35,20 @@ class CommandRequirements:
                 if not validator.isValid(value):
                     return False, f"Argument <{name}> does not match {str(validator)}"
             elif isinstance(validator, type):
-                if not isinstance(value, validator):
+                if not isinstance(value, validator) or (validator is bool and isinstance(value, int) and not isinstance(value, bool)):
                     try:
-                        args[i] = validator(value)
+                        if validator is bool:
+                            if isinstance(value, str):
+                                if value.lower() in ("true", "1", "yes"):
+                                    args[i] = True
+                                elif value.lower() in ("false", "0", "no"):
+                                    args[i] = False
+                                else:
+                                    return False, f"Argument <{name}> must be bool, got '{value}'"
+                            else:
+                                args[i] = bool(value)
+                        else:
+                            args[i] = validator(value)
                     except (ValueError, TypeError):
                         return False, f"Argument <{name}> must be {validator.__name__}, got '{value}'"
 

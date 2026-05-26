@@ -53,15 +53,20 @@ class ConfigManager:
         self.sub_configs[configId] = cfg
 
         logger.ok(f"Registered config '{configId}' at '{path}'")
+        self.Update(configId, template) #cuh it doesnt update for certain configs
         
+    def _merge_missing(self, target, source):
+        for key in source:
+            raw = source.item(key)
+            if key not in target:
+                target.add(key, raw)
+            elif isinstance(source[key], Mapping) and isinstance(target[key], Mapping):
+                self._merge_missing(target[key], source[key])
+
     def Update(self, configId, update):
         if configId not in self.sub_configs:
             raise LookupError(f"Cannot append to '{configId}': config is not registered")
 
         cfg = self.sub_configs[configId]
-
-        for key, value in update.items():
-            if key not in cfg.data:
-                cfg.data.add(key, value)
-
+        self._merge_missing(cfg.data, update)
         cfg.save()

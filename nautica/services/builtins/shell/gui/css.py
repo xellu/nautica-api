@@ -3,8 +3,7 @@ TCSS = """
 Header {
     height: 3;
     dock: top;
-    padding: 0 1;
-    border: round $primary;
+    border-top: dashed $primary;
 }
 
 .page { height: 1fr; }
@@ -16,14 +15,19 @@ HomePage {
     width: 1fr;
 }
 
-HomePage #log {
+
+HomePage #home-container {
     height: 1fr;
     width: 1fr;
     
-    border: hkey $primary;
-    background: $panel;
     padding: 0 1;
-    margin: 1;
+    margin: 1 2;
+}
+
+HomePage #log {
+    width: 1fr;
+    
+    border: round $secondary;
 }
 
 #log-input {
@@ -34,12 +38,20 @@ HomePage #log {
     margin: 0 1 0 0;
 }
 
-#log-autoscroll {
+.checkbox-sm {
     height: 1;
     border: none;
     
     padding: 0;
     background: $background;
+}
+
+#log-footer {
+    padding: 0 2 1 1;
+}
+
+#log-autoscroll {
+    padding: 0 2 0 0;
 }
 
 .log-timestamp {
@@ -48,13 +60,12 @@ HomePage #log {
 }
 
 .log-level {
-    width: 10;
+    width: 6;
     text-overflow: ellipsis;
 }
 
 .log-module { 
-    width: 20;
-    min-width: 30;
+    max-width: 24;
     text-overflow: ellipsis;
     margin: 0 2 0 0;
 }
@@ -71,4 +82,12 @@ HomePage #log {
     width: 1fr;
 }
 
+#threads {
+    width: 30%;
+    height: 1fr;
+    margin: 0 0 0 1;
+    
+    border: round $secondary;
+    background: $background;
+}
 """

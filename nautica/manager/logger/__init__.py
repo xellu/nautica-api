@@ -12,7 +12,7 @@ import inspect
 from ..config import ROOT_CONFIGS
 from colorama import Fore
 
-LogMemory = MemoryManager(limit=200)
+LogMemory = MemoryManager(limit=20)
 
 class LogManager:
     def __init__(self, level: LogLevel = LogLevel.ALL):
@@ -66,7 +66,8 @@ class LogManager:
         name = []
         for i, part in enumerate(n):
             if i == 0 or i == len(n)-1: name.append(part)
-            else: name.append(part[:3]) 
+            elif i == len(n) - 2: name.append(part[:4] if len(part) > 5 else part)
+            else: name.append(".") 
         return ".".join(name)
 
     def log(self, message: str, level: LogLevel, *args, **kwargs):

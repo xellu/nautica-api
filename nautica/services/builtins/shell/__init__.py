@@ -27,28 +27,33 @@ class Shell(Service):
         Config.Update("nautica",
             ConfigBuilder()
                 .add("services.shell", True, comment="Enables command execution and console input")
+
                 .add("shell.systemdMode", False, comment="Disables console input, to work as a systemd service")
                 .add("shell.gui", False, comment="Whether to use textual TUI renderer")
                 .add("shell.guiTheme", "frost", comment="Available themes are: frost (default), catppuccin, nord, gruvbox, tokyo-night, textual-dark, solarized-light, atom-one-dark, atom-one-light")
+
                 .build()
         )
         
-        if Config("nautica")["shell.guiTheme"]:
-            Config.New("shell-gui",
-                ConfigBuilder()
-                    .add("logging.autoScroll")
-                    
-                    .build()
-            )
+        Config.New("shell-gui",
+            ConfigBuilder()
+                .add("home.logScroll", True)
+                .add("home.threadList", True)
+                
+                .build()
+        )
+        
+        from .commands import (
+            basic
+        )
+
         
     def isEnabled(self):
         return Config("nautica")["services.shell"]
     
-    def onStart(self, registry):
+    def onStart(self, registry):        
         #import builtin commands
-        from .commands import (
-            basic
-        )
+        self.should_exit = False
             
         if Config("nautica")["shell.gui"] and not Config("nautica")["shell.systemdMode"]:
             threading.Thread(target=self._run_gui).start()
@@ -60,7 +65,7 @@ class Shell(Service):
 
     def onClose(self, reason):
         self.should_exit = True
-        if Config("nautica")["shell.gui"] and GUI.is_running:
+        if GUI.is_running:
             GUI.exit()
     
     def _run(self):
@@ -68,7 +73,8 @@ class Shell(Service):
     
     def _run_gui(self):
         GUI.run()
-        Services.onClose("Shell exited")
+        # Services.Reload("Shell")
+        Services.onClose("GUI Exited")
     
     @staticmethod
     def parse_command(command: str) -> dict:

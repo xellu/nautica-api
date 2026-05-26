@@ -1,6 +1,7 @@
 from ..decorator import RegisterCommand, CommandRequirements, ShellCommand
 from .....services import Services
-from .....manager import Logger
+from .....manager import Logger, Config
+from .....models.Requirements import AnyOf
 
 import os
 
@@ -11,7 +12,12 @@ import os
     )
 )
 def stop(force: bool = False):
-    if not force:
+    if not force:        
+        from ..gui import GUI
+        if GUI.is_running:
+            Logger.error("Use CTRL+Q to exit")
+            return
+        
         Services.onClose("requested by user")
         return
     
@@ -38,7 +44,9 @@ def _help(command: str | None = None):
     )
 )
 def manual(command: str = None):
-    s: dict[str, ShellCommand] = Services.Get("Shell")
+    from .. import Shell
+    
+    s: Shell = Services.Get("Shell")
     if not s:
         Logger.error("Unable to get shell service, commands unavailable")
         return
@@ -56,3 +64,25 @@ def manual(command: str = None):
     Logger.info(cmd.description)
     Logger.info("Usage:")
     Logger.info(f" * {cmd.getUsage()}")
+
+@RegisterCommand(
+    "usegui", "Switches shell rendering options",
+    CommandRequirements(
+        args = {"value": bool}
+    )
+)
+def useGui(value: bool):    
+    if value == Config("nautica")["shell.gui"]:
+        Logger.error(f"Already selected")
+        return
+
+    Config("nautica")["shell.gui"] = value
+    Logger.ok(f"Switched to {'GUI' if value else 'Terminal'}, restart for changes to take effect.")
+  
+@RegisterCommand(
+    "slist", "Lists all services"
+)
+def listServices():
+    Logger.info("Showing all active services:")
+    for s in Services.instances:
+        Logger.info(f" * {s._getName()}")
