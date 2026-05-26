@@ -82,10 +82,25 @@ HomePage #log {
     width: 1fr;
 }
 
-#threads {
+#thread-container {
     width: 30%;
     height: 1fr;
+    
     margin: 0 0 0 1;
+}
+
+#threads {
+    width: 1fr;
+    height: 70%;
+    margin: 0 1 0 0;
+    
+    border: round $secondary;
+    background: $background;
+}
+
+#threadsAsync {
+    width: 1fr;
+    height: 30%;
     
     border: round $secondary;
     background: $background;

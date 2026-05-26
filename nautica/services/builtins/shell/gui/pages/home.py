@@ -1,4 +1,4 @@
-from textual.containers import Container, VerticalScroll, HorizontalGroup
+from textual.containers import Container, VerticalScroll, HorizontalGroup, VerticalGroup
 from textual.widgets import Static, Input, Checkbox, DataTable
 from textual.widgets.data_table import RowKey
 
@@ -6,6 +6,7 @@ from textual import on
 
 
 import threading
+import asyncio
 
 from ......manager import Logger, LogMemory, Config
 from ......services import Services
@@ -18,7 +19,9 @@ class HomePage(Container):
     def compose(self):               
         with HorizontalGroup(id="home-container"):
             yield VerticalScroll(id="log")
-            yield DataTable(id="threads")
+            with VerticalGroup(id="thread-container"):
+                yield DataTable(id="threads")
+                yield DataTable(id="threadsAsync")
         
         with HorizontalGroup(id="log-footer"):
             yield Input(id="log-input", placeholder="Send a command")
@@ -35,34 +38,70 @@ class HomePage(Container):
         
         #threads
         self._thread_keys: dict[int, RowKey] = {}
+        self._thread_workers_keys: dict[str, RowKey] = {}
         self.query_one("#threads", DataTable).add_columns("Name", "Func", "Module")
-        self.query_one("#threads").styles.display = "block" if Config("shell-gui")["home.threadList"] else "none"
-
+        async_cols = self.query_one("#threadsAsync", DataTable).add_columns("Func", "Module", "Count")
+        self._async_count_col = async_cols[2]
+        self.query_one("#thread-container").styles.display = "block" if Config("shell-gui")["home.threadList"] else "none"
         
         self.set_interval(0.25, self.refresh_logs)
         self.set_interval(1, self.refresh_threads)
 
     
-    def refresh_threads(self) -> None:
-        widget = self.query_one("#threads", DataTable)
+    async def refresh_threads(self) -> None:
+        threadList = self.query_one("#threads", DataTable)
+        asyncioList = self.query_one("#threadsAsync", DataTable)
         current = {t.ident: t for t in threading.enumerate()}
+        hidden = 0
 
-        widget.border_title = "Threads"
-        widget.border_subtitle = f"{len(current.keys())} Active"
+        
 
-        #clear threads
+        # clear removed threads
         for ident in list(self._thread_keys):
             if ident not in current:
-                widget.remove_row(self._thread_keys.pop(ident))
+                threadList.remove_row(self._thread_keys.pop(ident))
 
-        #add & update threads
+        # add new threads
         for ident, t in current.items():
             func = t._target.__name__ if t._target else str(t.ident)
             module = t._target.__module__ if t._target else "N/A"
-
+            
+            if "asyncio" in t.name:
+                hidden += 1
+                continue
+                
             if ident not in self._thread_keys:
-                key = widget.add_row(t.name, func, module, key=str(ident))
+                key = threadList.add_row(t.name, func, module, key=str(ident))
                 self._thread_keys[ident] = key
+
+        #asyncio tasks/workers, grouped by func name (for stacking)
+        groups: dict[str, tuple[int, str]] = {}
+        for t in asyncio.all_tasks():
+            coro = t.get_coro()
+            func = getattr(coro, "__qualname__", None) or getattr(coro, "__name__", "?")
+            frame = getattr(coro, "cr_frame", None)
+            module = frame.f_globals.get("__name__", "N/A") if frame else "N/A"
+            count, _ = groups.get(func, (0, module))
+            groups[func] = (count + 1, module)
+
+        #update titles
+        threadList.border_title = f"Threads"
+        threadList.border_subtitle = f"{len(current)-hidden} Active (+{hidden} Worker Threads)"
+
+        asyncioList.border_title = "Workers"
+        asyncioList.border_subtitle = f"{sum(c for c, _ in groups.values())} Active"
+
+        #update workers
+        for func in list(self._thread_workers_keys):
+            if func not in groups:
+                asyncioList.remove_row(self._thread_workers_keys.pop(func))
+
+        for func, (count, module) in groups.items():
+            if func not in self._thread_workers_keys:
+                key = asyncioList.add_row(func, module, f"{count}x", key=func)
+                self._thread_workers_keys[func] = key
+            else:
+                asyncioList.update_cell(self._thread_workers_keys[func], self._async_count_col, f"{count}x")
         
     def refresh_logs(self) -> None:
         
@@ -73,7 +112,7 @@ class HomePage(Container):
         
         widget = self.query_one("#log", VerticalScroll)    
         widget.border_title = f"Console"
-        widget.border_subtitle = f"{len(LogMemory) if len(LogMemory) <= LogMemory.limit else str(LogMemory.limit) + '+'} Entries"
+        widget.border_subtitle = f"{len(LogMemory) if len(LogMemory) < LogMemory.limit else str(LogMemory.limit) + '+'} Records"
         
         for log in entries:
             widget.mount(
@@ -100,7 +139,7 @@ class HomePage(Container):
         
     @on(Checkbox.Changed, "#home-threads")
     def handle_threads_toggle(self, event: Checkbox.Changed):
-        self.query_one("#threads").styles.display = "block" if event.value else "none"
+        self.query_one("#thread-container").styles.display = "block" if event.value else "none"
         
     @on(Input.Submitted, "#log-input")
     async def handle_run_command(self, event: Input.Submitted):

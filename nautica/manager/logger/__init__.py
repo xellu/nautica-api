@@ -12,7 +12,7 @@ import inspect
 from ..config import ROOT_CONFIGS
 from colorama import Fore
 
-LogMemory = MemoryManager(limit=20)
+LogMemory = MemoryManager(limit=100)
 
 class LogManager:
     def __init__(self, level: LogLevel = LogLevel.ALL):
