@@ -1,4 +1,5 @@
 from ...ext.Static import log_file
+from ..memory import MemoryManager
 from .levels import LogLevel, LevelColors
 from .tableutil import TableUtil
 
@@ -10,6 +11,8 @@ import threading
 import inspect
 from ..config import ROOT_CONFIGS
 from colorama import Fore
+
+LogMemory = MemoryManager(limit=200)
 
 class LogManager:
     def __init__(self, level: LogLevel = LogLevel.ALL):
@@ -95,7 +98,20 @@ class LogManager:
 
             if level.value >= self.level.value:
                 print(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", *args)
-
+                # LogMemory.Add(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}")
+                LogMemory.Add({
+                    "moduleName": {
+                        "full": name,
+                        "short": short_name
+                    },
+                    "timestamp": {
+                        "formatted": short_timestamp,
+                        "raw": time.time()
+                    },
+                    "message": message,
+                    "level": level.name
+                })
+                
             if self._disable_writes: return
             with open(self._path, "a", encoding="utf-8") as f:
                 f.write(f"({timestamp}) [{name.upper()}/{level.name.upper()}] {message}\n")

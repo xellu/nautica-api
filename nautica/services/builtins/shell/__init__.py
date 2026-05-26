@@ -33,6 +33,14 @@ class Shell(Service):
                 .build()
         )
         
+        if Config("nautica")["shell.guiTheme"]:
+            Config.New("shell-gui",
+                ConfigBuilder()
+                    .add("logging.autoScroll")
+                    
+                    .build()
+            )
+        
     def isEnabled(self):
         return Config("nautica")["services.shell"]
     
@@ -42,15 +50,17 @@ class Shell(Service):
             basic
         )
             
-        if Config("nautica")["shell.gui"]:
+        if Config("nautica")["shell.gui"] and not Config("nautica")["shell.systemdMode"]:
             threading.Thread(target=self._run_gui).start()
         else:
+            if Config("nautica")["shell.systemdMode"]: Logger.warn("Shell GUI is not available when running in systemd mode")
+            
             #                           dont change ---v
             threading.Thread(target=self._run, daemon=True).start()
 
     def onClose(self, reason):
         self.should_exit = True
-        if Config("nautica")["shell.gui"]:
+        if Config("nautica")["shell.gui"] and GUI.is_running:
             GUI.exit()
     
     def _run(self):

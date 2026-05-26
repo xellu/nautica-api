@@ -14,8 +14,8 @@ frostTheme = Theme(
     warning="#ffc768",
     error="#fe6c6c",
         
-    surface="#181825",
-    panel="#272b41",
+    surface="#1e213d",
+    panel="#14162a",
         
     dark=True,
     
@@ -29,8 +29,8 @@ frostTheme = Theme(
 catppuccinTheme = Theme(
     name="catppuccin",
     
-    primary="#cba6f7",    
-    secondary="#74c7ec",
+    primary="#89b4fa",    
+    secondary="#cba6f7",
     accent="#f5c2e7",
         
     foreground="#cdd6f4",
