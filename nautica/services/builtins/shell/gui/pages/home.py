@@ -10,6 +10,7 @@ import asyncio
 
 from ......manager import Logger, LogMemory, Config
 from ......services import Services
+from ..autocomplete import ShellSuggester
 
 TABLE_ROWS = [
     ("Time", "Module", "Level", "Content")
@@ -24,7 +25,7 @@ class HomePage(Container):
                 yield DataTable(id="threadsAsync")
         
         with HorizontalGroup(id="log-footer"):
-            yield Input(id="log-input", placeholder="Send a command")
+            yield Input(id="log-input", placeholder="Send a command", suggester=ShellSuggester())
             yield Checkbox("Auto Scroll", id="log-autoscroll", classes="checkbox-sm")
             yield Checkbox("Threads", id="home-threads", classes="checkbox-sm")
         
