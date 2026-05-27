@@ -1,0 +1,193 @@
+from ...ext.Static import log_file
+from ..memory import MemoryManager
+from .levels import LogLevel, LevelColors
+from .tableutil import TableUtil
+
+import os
+import sys
+import time
+import traceback
+import threading
+import inspect
+from ..config import ROOT_CONFIGS
+from colorama import Fore
+
+LogMemory = MemoryManager(limit=100)
+
+class LogManager:
+    def __init__(self, level: LogLevel = LogLevel.ALL):
+        """
+        Nautica's Logging Manager
+        
+        Args:
+            name (str): Tag name for the logger instance
+            level (LogLevel/int): A minimal level required for a message to get printed
+        """
+        
+        self.level: LogLevel = level
+        self._path = os.path.join(".logs", log_file)
+        self._lock = threading.Lock()
+        
+        self._disable_writes = not os.path.exists(ROOT_CONFIGS["nautica"])
+                
+        if not self._disable_writes:
+            #create log file
+            os.makedirs(".logs", exist_ok=True)
+            if not os.path.exists(self._path):
+                open(self._path, "x", encoding="utf-8").close()
+            
+        # LogManInstances.append(self)
+        
+        #aliases----
+        self.ok = self.success
+        self.warning = self.warn
+        self.fatal = self.critical
+            
+    def _caller_name(self) -> str:
+        # start = time.time()
+        
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        frame = sys._getframe(1)
+        name = "N3"
+        while frame:
+            fname = os.path.abspath(frame.f_code.co_filename)
+            if not fname.startswith(this_dir):
+                name = frame.f_globals.get("__name__", "unknown")
+                break
+            frame = frame.f_back
+        
+        # print(f"Took: {(time.time()-start)*1000:.1f}ms")
+        return name
+
+    def _shorten_name(self, name) -> str:
+        if len(name) <= 16: return name
+        
+        n = name.split(".")
+        name = []
+        for i, part in enumerate(n):
+            if i == 0 or i == len(n)-1: name.append(part)
+            elif i == len(n) - 2: name.append(part[:4] if len(part) > 5 else part)
+            else: name.append(".") 
+        return ".".join(name)
+
+    def log(self, message: str, level: LogLevel, *args, **kwargs):
+        with self._lock:
+            if not isinstance(level, LogLevel):
+                raise TypeError("Logger level is not an instance of LogLevel")
+            
+            if level in [LogLevel.ALL, LogLevel.NONE]:
+                raise ValueError(f"Log level '{level.name}' is not a valid log level for logging messages")
+                
+            if level == LogLevel.DEBUG:
+                from .. import Config
+                if not Config("nautica")("nautica.debug"): return
+            
+            if not isinstance(message, str): message = str(message)
+            
+            for key, value in kwargs.items():
+                message = message.replace(f"%{key}%", str(value))
+            message = message % args
+            
+            #(HH:MM:SS) [MODULE/LEVEL] message
+            name = self._caller_name()
+            short_name = self._shorten_name(name)
+            
+            timestamp = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())
+            short_timestamp = time.strftime("%H:%M:%S", time.localtime())
+            color_tag = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[0]
+            color_msg = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[1]
+
+            if level.value >= self.level.value:
+                print(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", *args)
+                # LogMemory.Add(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}")
+                LogMemory.Add({
+                    "moduleName": {
+                        "full": name,
+                        "short": short_name
+                    },
+                    "timestamp": {
+                        "formatted": short_timestamp,
+                        "raw": time.time()
+                    },
+                    "message": message,
+                    "level": level.name
+                })
+                
+            if self._disable_writes: return
+            with open(self._path, "a", encoding="utf-8") as f:
+                f.write(f"({timestamp}) [{name.upper()}/{level.name.upper()}] {message}\n")
+                f.flush()
+
+            # if level in [LogLevel.DEBUG, LogLevel.SILENT]: return #?????
+        
+    def info(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.INFO, *args, **kwargs)
+    
+    def warn(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.WARN, *args, **kwargs)
+    
+    def error(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.ERROR, *args, **kwargs)
+    
+    def debug(self, message: str, *args, **kwargs):
+        from .. import Config
+        if not Config("nautica")("nautica.debug"): return
+
+        if not isinstance(message, str): message = str(message)        
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.DEBUG, *args, **kwargs)
+    
+    def critical(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.CRITICAL, *args, **kwargs)
+
+    def success(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.OK, *args, **kwargs)
+        
+    def _trace(self, message: str, *args, **kwargs):
+        if not isinstance(message, str): message = str(message)
+        for ln in message.splitlines():
+            self.log(ln, LogLevel.TRACE, *args, **kwargs)
+        
+    def dir(self, obj: any):
+        obj_name = obj.__name__ if hasattr(obj, "__name__") else "obj"
+        for key in dir(obj):
+            if key in ["__globals__", "__builtins__"]: continue
+            
+            ln = f"{obj_name}.{key} = {getattr(obj, key)}"
+            self.log(ln, LogLevel.DEBUG)
+        
+    def trace(self, error: Exception):
+        trace_str = traceback.format_tb(tb=error.__traceback__)
+        trace_data = traceback.extract_tb(error.__traceback__)        
+
+        
+        self.error(f"Stacktrace for {type(error).__name__}: {error}")
+        
+        try:
+            file, line, func, content = trace_data[-1]
+            self._trace(f"File: {file}")
+            self._trace(f"Line: {line}")
+            self._trace(f"Func: {func}")
+            self._trace(f"Code: {content}")
+            
+        except:
+            self._trace("Unable to extract stacktrace data")
+    
+        for i, ln in enumerate(trace_str):
+            self.error(f"{i+1} ---------------------------")
+            self._trace(ln)
+            
+        self.error("-----------------------------")
+        
+    def table(self):
+        return TableUtil(self)

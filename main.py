@@ -1,11 +1,3 @@
-from colorama import Fore
+import os
 
-try:
-    import nautica
-    # nautica.run()
-except Exception as err:
-    import traceback
-    from nautica.services.logger import LogManager
-    
-    logger = LogManager("Main")
-    logger.trace(err)
+os.system("py -m nautica run .")

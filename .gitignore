@@ -1,3 +1,7 @@
+dump.py
+dump.txt
+benchmark.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -6,11 +10,11 @@ __pycache__/
 # C extensions
 *.so
 
-#other
-.logs/
-*.config.json
-*.xdb
 src/
+plugins/
+config/
+.logs/
+*.n3
 
 # Distribution / packaging
 .Python

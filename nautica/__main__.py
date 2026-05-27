@@ -1,3 +1,9 @@
-from nautica import run
+from .cli import cli
+from .cli import (
+    Create,
+    Install,
+    Run
+)
 
-run()
+if __name__ == "__main__":
+    cli()
