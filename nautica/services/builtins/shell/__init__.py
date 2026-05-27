@@ -4,8 +4,6 @@ from ....manager import Config, ConfigBuilder, Logger, LogLevel
 from ....services import Services
 from ....ext.Util import maybeAwait
 
-from .gui import GUI
-
 import asyncio
 import threading
 import pyreadline3
@@ -62,6 +60,8 @@ class Shell(Service):
             threading.Thread(target=self._run, daemon=True).start()
 
     def onClose(self, reason):
+        from .gui import GUI
+
         self.should_exit = True
         if GUI.is_running:
             GUI.exit()
@@ -70,6 +70,8 @@ class Shell(Service):
         asyncio.run(self.loop())
     
     def _run_gui(self):
+        from .gui import GUI
+
         GUI.run()
         # Services.Reload("Shell")
         Services.onClose("GUI Exited")

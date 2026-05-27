@@ -14,7 +14,10 @@ dependencies = [
     "uvicorn",
     "colorama",
     "tomlkit",
-    "click"
+    "click",
+    "psutil",
+    "textual",
+    "pyreadline3"
 ]
 
 [tool.setuptools.packages.find]

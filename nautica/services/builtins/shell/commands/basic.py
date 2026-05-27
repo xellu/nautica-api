@@ -97,3 +97,10 @@ def listServices():
     Logger.info("Showing all active services:")
     for s in Services.instances:
         Logger.info(f" * {s._getName()}")
+
+@RegisterCommand("ram", "Shows ram usage")
+def ramUsage():
+    import psutil
+    
+    p = psutil.Process()
+    Logger.info(f"RAM Usage: {p.memory_info().rss/1024/1024:.1f}MB")
