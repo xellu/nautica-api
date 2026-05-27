@@ -14,7 +14,7 @@ from .pages import (
 
 PAGES = [
     "overview",
-    "test"
+    # "test"
 ]
 
 class Header(Container):
@@ -40,7 +40,7 @@ class N3GUI(App):
         yield Header(id="header")
         with ContentSwitcher(initial="page-overview"):
             yield home.HomePage(id="page-overview", classes="page")
-            yield home.HomePage(id="page-test", classes="page")
+            # yield home.HomePage(id="page-test", classes="page")
 
     def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
         if event.tab and event.tab.id:

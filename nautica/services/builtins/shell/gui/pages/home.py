@@ -1,6 +1,7 @@
 from textual.containers import Container, VerticalScroll, HorizontalGroup, VerticalGroup
 from textual.widgets import Static, Input, Checkbox, DataTable, OptionList
 from textual.widgets.data_table import RowKey
+from textual.events import InputEvent
 
 from textual import on
 
@@ -107,6 +108,21 @@ class HomePage(Container):
                 self._thread_workers_keys[func] = key
             else:
                 asyncioList.update_cell(self._thread_workers_keys[func], self._async_count_col, f"{count}x")
+        
+    def on_key(self, event: InputEvent):
+        #switch focus to autocomplete form on arrow up
+        if event.key != "up":
+            return
+        
+        widget = self.app.focused
+        
+        if not widget: return
+        if widget.id != "cmd-input": return
+        
+        # Logger.ok("detected arr up in input")
+        suggestions = self.query_one("#suggestions")
+        if suggestions.styles.display == "block":
+            suggestions.focus()
         
     def refresh_logs(self) -> None:
         

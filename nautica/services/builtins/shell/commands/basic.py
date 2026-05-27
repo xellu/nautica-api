@@ -1,9 +1,20 @@
 from ..decorator import RegisterCommand, CommandRequirements, ShellCommand
 from .....services import Services
 from .....manager import Logger, Config
-from .....models.Requirements import AnyOf
+from .....models.Requirements import AnyOf, Requirement
 
 import os
+
+class ManualAutoOptions(AnyOf):
+    def __init__(self):
+        Requirement.__init__(self) #dont run AnyOf init
+
+    @property
+    def options(self):
+        return list(Services["Shell"].handlers.keys())
+    
+    def __str__(self):
+        return "command"
 
 @RegisterCommand(
     "stop", "Stops all services and exits",
@@ -40,7 +51,7 @@ def _help(command: str | None = None):
 @RegisterCommand(
     "man", "Shows details about a command",
     args = CommandRequirements(
-        args = {"command": str}
+        args = {"command": ManualAutoOptions()}
     )
 )
 def manual(command: str = None):
