@@ -136,8 +136,8 @@ class LogManager:
             self.log(ln, LogLevel.ERROR, *args, **kwargs)
     
     def debug(self, message: str, *args, **kwargs):
-        from ... import Core
-        if not Core.Config("nautica")("nautica.debug"): return
+        from .. import Config
+        if not Config("nautica")("nautica.debug"): return
 
         if not isinstance(message, str): message = str(message)        
         for ln in message.splitlines():

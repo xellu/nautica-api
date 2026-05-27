@@ -89,8 +89,8 @@ class ServiceRegistryManager:
                     ready.append(dependent)
 
         if len(result) != len(queue):
-            Logger.error("Circular dependency detected in service start queue, unable to initialize")
-            return []
+            Logger.critical("Circular dependency detected in service start queue, unable to initialize")
+            return [] #return empty list to exit
         return result
 
     def onStart(self):
@@ -101,7 +101,7 @@ class ServiceRegistryManager:
             
             for dep in serv._depends_on: #crash on dependency error
                 if not self.Get(dep):
-                    Logger.error(f"Unable to load service, dependency '{dep}' not found")
+                    Logger.critical(f"Unable to load service, dependency '{dep}' not found")
                     
                     self.onClose("Failed to initialize") #crash
                     return

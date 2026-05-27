@@ -69,7 +69,7 @@ class Shell(Service):
         asyncio.run(self.loop())
     
     def _run_gui(self):
-        from .gui import GUI
+        from .gui import GUI #saves about 10mb of ram, dont move
 
         GUI.run()
         # Services.Reload("Shell")
