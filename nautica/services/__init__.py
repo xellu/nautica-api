@@ -98,7 +98,14 @@ class ServiceRegistryManager:
             if not serv.isEnabled():
                 Logger.warn(f"Service disabled: {serv._getName()}")
                 continue #skip disabled services
-    
+            
+            for dep in serv._depends_on: #crash on dependency error
+                if not self.Get(dep):
+                    Logger.error(f"Unable to load service, dependency '{dep}' not found")
+                    
+                    self.onClose("Failed to initialize") #crash
+                    return
+                    
             serv.onInstall()
             serv._onStart(self)
             Logger.ok(f"Service started: {serv._getName()}")
