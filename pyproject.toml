@@ -17,8 +17,7 @@ dependencies = [
     "tomlkit",
     "click",
     "psutil",
-    "textual",
-    "pyreadline3"
+    "textual"
 ]
 
 [tool.setuptools.packages.find]

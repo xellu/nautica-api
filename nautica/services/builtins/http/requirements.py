@@ -86,7 +86,7 @@ class RequirementParser:
     def _validate(self, schema: dict, source, add_error, coerce: bool = False):
         for k, _type in schema.items():
             if k not in source:
-                add_error(f"Key '{k}' with is required but was not provided, schema={RouteRequirements.typeToString(_type)}")
+                add_error(f"Key '{k}' is required but was not provided, schema={RouteRequirements.typeToString(_type)}")
                 continue
 
             value = source[k]

@@ -4,9 +4,7 @@ from ....manager import Config, ConfigBuilder, Logger, LogLevel
 from ....services import Services
 from ....ext.Util import maybeAwait
 
-import asyncio
 import threading
-import pyreadline3
 
 class Shell(Service):
     def __init__(self):
