@@ -114,6 +114,7 @@ class Middleware:
                 ctx.cookies = args.cookies
                 ctx.body = args.body
                 ctx.query = args.query
+                ctx.files = args.files
                 #---------
             
             #get real ip

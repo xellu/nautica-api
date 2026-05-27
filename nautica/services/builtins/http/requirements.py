@@ -1,4 +1,4 @@
-from ....models.Http import InFlightRouteData, RouteRequirements
+from ....models.Http import InFlightRouteData, RouteRequirements, AttachedFile
 from ....models.Requirements import RequirementResponse, Requirement
 from starlette.requests import Request
 
@@ -10,6 +10,7 @@ class ErrorDetails:
         self._cookies = []
         self._query = []
         self._body = []
+        self._form = []
         
     def addToHeaders(self, msg):
         self.isOk = False
@@ -26,6 +27,10 @@ class ErrorDetails:
     def addToBody(self, msg):
         self.isOk = False
         self._body.append(msg)
+        
+    def addToForm(self, msg):
+        self.isOk = False
+        self._form.append(msg)
     
     def toDict(self):
         out = {}
@@ -33,6 +38,7 @@ class ErrorDetails:
         if self._cookies: out["cookies"] = self._cookies
         if self._body: out["body"] = self._body
         if self._query: out["query"] = self._query
+        if self._form: out["form"] = self._form
         return out
         
     
@@ -51,6 +57,7 @@ class RequirementParser:
         cookies = request.cookies
         query = dict(request.query_params)
         body = await self.getBody(request)
+        files, form = await self.getForm(request)
         
         #and check if it it matches needed data
         
@@ -60,6 +67,7 @@ class RequirementParser:
         self._validate(needed.getCookies(), cookies, details.addToCookies, coerce=True)
         self._validate(needed.getQuery(), query, details.addToQuery, coerce=True)
         self._validate(needed.getBody(), body, details.addToBody, coerce=False)
+        self._validateFiles(needed.getFiles(), files, details.addToBody)
 
         #and return all the shit
         return RequirementResponse(
@@ -70,6 +78,7 @@ class RequirementParser:
             cookies = cookies,
             query = query,
             body = body,
+            files = files,
             
             missingData=details.toDict() if not details.isOk else None
         ) #wow
@@ -77,7 +86,7 @@ class RequirementParser:
     def _validate(self, schema: dict, source, add_error, coerce: bool = False):
         for k, _type in schema.items():
             if k not in source:
-                add_error(f"Key '{k}' with is required but was not provided, scheme={RouteRequirements.typeToString(_type)}")
+                add_error(f"Key '{k}' with is required but was not provided, schema={RouteRequirements.typeToString(_type)}")
                 continue
 
             value = source[k]
@@ -104,3 +113,26 @@ class RequirementParser:
         try:
             return await request.json()
         except: return {}
+
+    async def getForm(self, request: Request):
+        try:
+            form = await request.form()
+            files = {}
+            fields = {}
+            for key, value in form.items():
+                if hasattr(value, "filename"):  # it's an UploadFile
+                    files[key] = AttachedFile(value)
+                else:
+                    fields[key] = value
+            return files, fields
+        except:
+            return {}, {}
+
+    def _validateFiles(self, schema: dict, files: dict, add_error):
+        for k, req in schema.items():
+            if k not in files:
+                add_error(f"File '{k}' is required but was not provided, schema={str(req)}")
+                continue
+            
+            if not req.isValid(files[k]):
+                add_error(f"File '{k}' does not match requirements defined as '{str(req)}'")

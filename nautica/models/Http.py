@@ -1,24 +1,29 @@
 from starlette.requests import Request
 from starlette.datastructures import URL
-from ..ext.StatusCodes import getMessage
 from starlette.responses import Response
+from starlette.datastructures import UploadFile
+
+from ..ext.StatusCodes import getMessage
+from .Requirements import File
 
 import time
 class RouteRequirements:
     """Declares expected type schemas for each part of an incoming request."""
 
-    def __init__(self, body: dict[type] = None, form: dict[type] = None, headers: dict[type] = None, cookies: dict[type] = None, query: dict[type] = None):
+    def __init__(self, body: dict[type] = None, form: dict[type] = None, headers: dict[type] = None, cookies: dict[type] = None, query: dict[type] = None, files: dict[File] = None):
         self.body = body or {}
         self.form = form or {}
         self.headers = headers or {}
         self.cookies = cookies or {}
         self.query = query or {}
+        self.files = files or {}
 
     def getBody(self): return self.body
     def getForm(self): return self.form
     def getHeaders(self): return self.headers
     def getCookies(self): return self.cookies
     def getQuery(self): return self.query
+    def getFiles(self): return self.files
 
     @staticmethod
     def typeToString(v):
@@ -35,6 +40,7 @@ class RouteRequirements:
             "headers": serialize(self.headers),
             "cookies": serialize(self.cookies),
             "query": serialize(self.query),
+            "files": serialize(self.files)
         }
 
 
@@ -73,6 +79,22 @@ class InFlightRouteData:
     def getRequirements(self) -> RouteRequirements | None: return self.requirements
     def getSourceFile(self) -> str: return self.sourceFile
 
+class AttachedFile:
+    def __init__(self, upload: UploadFile):
+        self._file = upload
+        self.filename = upload.filename
+        self.mime = upload.content_type
+        self.size = upload.size #updated on read
+    
+    async def read(self) -> bytes:
+        data = await self._file.read()
+        self.size = len(data)
+        return data
+    
+    async def save(self, path: str):
+        data = await self.read()
+        with open(path, "wb") as f:
+            f.write(data)
 
 class RequestContext:
     """Wraps a Starlette Request and exposes it to route handlers."""
@@ -86,6 +108,7 @@ class RequestContext:
         self.query: dict = {}
         self.cookies: dict = {}
         self.body: dict = {}
+        self.files: dict[str, AttachedFile] = {}
         
         self.params: dict = request.path_params
         

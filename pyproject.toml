@@ -12,6 +12,7 @@ requires-python = ">=3.10"
 dependencies = [
     "starlette",
     "uvicorn",
+    "python-multipart",
     "colorama",
     "tomlkit",
     "click",

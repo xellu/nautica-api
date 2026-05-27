@@ -10,6 +10,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.routing import Route, Mount
 from starlette.requests import Request
 from starlette.exceptions import HTTPException
+from starlette.middleware.cors import CORSMiddleware
 
 from contextlib import asynccontextmanager
 import threading
@@ -41,6 +42,17 @@ class HTTPServer(Service):
                 404: self.handle_404
             }
         )
+        
+        #cors middleware
+        if Config("nautica")["http.cors.enabled"]:
+            self.app.add_middleware(
+                CORSMiddleware,
+                    allow_origins = Config("nautica")["http.cors.origins"],
+                    allow_methods = Config("nautica")["http.cors.methods"],
+                    allow_headers = Config("nautica")["http.cors.headers"],
+                    allow_credentials = Config("nautica")["http.cors.credentials"], 
+            )
+        
         self.thread = t = threading.Thread(target=self._run)
         t.start()
 
@@ -67,7 +79,8 @@ class HTTPServer(Service):
                 Route(r.getPath(), r.getFunc(), methods=[r.getMethod()])
             )
             
-        if Config("nautica")("http.static.enabled"):
+        #static routes
+        if Config("nautica")["http.static.enabled"]:
             out.append(
                 Mount(Config("nautica")["http.static.endpoint"], app=StaticFiles(directory=Config("nautica")["http.static.directory"]))
             )

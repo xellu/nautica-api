@@ -42,10 +42,19 @@ class RouteManager:
     def PATCH(self, name: str | None = None):
         return Middleware(self, "patch", name).decorator
 
-    def Require(self, body: dict = None, headers: dict = None, cookies: dict = None, query: dict = None):
+    def Require(self,
+            body: dict = None,
+            headers: dict = None,
+            cookies: dict = None,
+            query: dict = None,
+            files: dict = None
+        ):
         for field in [body or {}, headers or {}, cookies or {}, query or {}]:
             for v in field.values():
                 if not (isinstance(v, type) or isinstance(v, Requirements.Requirement)): raise TypeError(f"Context builder only accepts types and Requirements")
+        
+        for v in (files or {}).values():
+            if not isinstance(v, Requirements.File): raise TypeError(f"File dict only accepts Requirements.File, provided '{type(v).__name__}'")
         
         def decorator(func):
             func._requirements = RouteRequirements(
@@ -53,6 +62,7 @@ class RouteManager:
                 headers=headers,
                 cookies=cookies,
                 query=query,
+                files = files
             )
             return func
     

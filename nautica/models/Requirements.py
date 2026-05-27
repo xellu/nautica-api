@@ -1,4 +1,5 @@
 import re
+from starlette.datastructures import UploadFile
 
 class Requirement:
     """Base class for request field validators; subclass and override isValid() to add rules."""
@@ -64,8 +65,48 @@ class RegExMatch(Requirement):
     def __str__(self):
         return f"regExMatch({self._str})"
     
+class File(Requirement):
+    def __init__(self, max_size: int = None, mime: list[str] = None):
+        self.max_size = max_size
+        self.mime = mime
+        
+    @staticmethod
+    def KB(i: int = 1): return i * 1024
+    @staticmethod
+    def MB(i: int = 1): return i * 1024 * 1024
+    @staticmethod
+    def GB(i: int = 1): return i * 1024 * 1024 * 1024
+     
+    @property
+    def maxSizeStr(self) -> str:
+        if self.max_size > self.GB():
+            return f"{self.max_size / self.GB():.1f}GB"
+        elif self.max_size > self.MB():
+            return f"{self.max_size / self.MB():.1f}MB"
+        elif self.max_size > self.KB():
+            return f"{self.max_size / self.KB():.1f}KB"
+        return f"{self.max_size}B"
+        
+    
+    def isValid(self, content: UploadFile) -> bool:
+        # if not isinstance(content, UploadFile):
+        #     print("is not uploadfile")
+        #     return False
+        
+        if self.mime and content.mime not in self.mime:
+            print("doesnt match mime")
+            return False
+        
+        if self.max_size and content.size > self.max_size:
+            print("too big")
+            return False
+        return True
+    
+    def __str__(self):
+        return f"file(size=max({self.maxSizeStr}), mime=anyOf({', '.join(self.mime or [])}))"
+    
 class RequirementResponse:
-    def __init__(self, ok: bool, headers: dict = None, cookies: dict = None, body: dict = None, query: dict = None, missingData: dict | None = None):
+    def __init__(self, ok: bool, headers: dict = None, cookies: dict = None, body: dict = None, query: dict = None, files: dict = None, missingData: dict | None = None):
         self.ok = ok
         self.missingData = missingData or {}
         
@@ -73,3 +114,4 @@ class RequirementResponse:
         self.cookies = cookies or {}
         self.body = body or {}
         self.query = query or {}
+        self.files = files or {}
