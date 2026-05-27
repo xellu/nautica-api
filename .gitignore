@@ -1,6 +1,8 @@
 dump.py
 dump.txt
 benchmark.py
+test.py
+draft.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
