@@ -2,10 +2,9 @@
 name: Publish to PyPI
 
 on:
-  push:
-    tags:
-      - "v*"  # triggers on v3.0.0, v3.1.0, etc.
-
+  release:
+    types: [published]
+    
 jobs:
   publish:
     runs-on: ubuntu-latest

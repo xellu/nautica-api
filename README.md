@@ -2,8 +2,6 @@
 
 Nautica V3 _(also referred to as Nautica API, Nautica3, N3)_ is a modular application framework built around a service registry. It provides you with a structured way to manage components of your applications, such as HTTP or Socket servers, background workers, etc.
 
-> N3 is not just an HTTP framework — the HTTP server is one of many services. It's designed for applications that need to coordinate multiple components at once.
-
 ## What's Included
 - **Service Registry** with dependency resolver
 - **Lifecycle hooks** for install, start and shutdown
@@ -12,11 +10,34 @@ Nautica V3 _(also referred to as Nautica API, Nautica3, N3)_ is a modular applic
 - **Shell** for interacting with services
 - **TUI** for live logs, thread and worker inspection _(optional)_
 - **Plugin system** for extending projects without modifying core code
-- **HTTP API** built on Starlette + Uvicorn
+- Many Built-in **Services**, including **HTTP API**
 
----
+***
 
 I made N3 because I was solving the same problems in my projects, those being: configs, logging, figuring out startup orders, not to mention the validation boilerplate on every route. Because of this I made Nautica V2, which solved many of these issues, and V3 to improve on the idea.
+
+## Get Started
+
+Firstly, install Nautica:
+```bash
+pip install nautica
+```
+
+To create a project, use the CLI ([docs](https://github.com/xellu/nautica-api/wiki/CLI-Reference)):
+```bash
+nautica create my-project
+cd my-project
+nautica run .
+```
+
+To setup an existing project:
+```bash
+cd my-project
+nautica install
+nautica run .
+```
+
+***
 
 ## How HTTP API Compares
 
