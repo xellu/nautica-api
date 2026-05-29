@@ -40,3 +40,7 @@ class WSRoute:
         
     def addPacket(self, packetId: str, func: callable) -> None:
         self.packets[packetId] = func
+        
+class WSError(Exception):
+    def __init__(self, *args):
+        super().__init__(*args)

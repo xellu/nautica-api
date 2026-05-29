@@ -1,6 +1,6 @@
 from ....manager import Logger
 from ....models.Service import Service
-from ....models.Websocket import WSRoute, WebSocketContext
+from ....models.Websocket import WSRoute, WebSocketContext, WSError
 from ....manager import Config, ConfigBuilder
 from ....ext.Util import walkPath, importModule, maybeAwait
 
@@ -56,6 +56,8 @@ class WebSocket(Service):
             self.conns.append(websocket)
             ctx = WebSocketContext(websocket)
             
+            Logger.info(f"{websocket.client.host}: CONN -> {route.path}")
+            
             if route.onConnect:
                 try:
                     await maybeAwait(route.onConnect(ctx))
@@ -71,7 +73,7 @@ class WebSocket(Service):
                     
                     handler_fn = route.packets.get(packet_id)
                     if not handler_fn:
-                        await websocket.send_json({"id": "error", "data": f"Unknown packet: '{packet_id}'"})
+                        await websocket.send_json({"id": "error", "data": {"details": f"Unknown packet: '{packet_id}'"}})
                         continue
                     
                     try:
@@ -79,13 +81,14 @@ class WebSocket(Service):
                         if result:
                             await websocket.send_json({"id": packet_id, "data": result})
                     except Exception as e:
-                        Logger.trace(e)
-                        await websocket.send_json({"id": "error", "data": str(e)})
+                        if not isinstance(e, WSError): Logger.trace(e)
+                        await websocket.send_json({"id": "error", "data": {"details": str(e)}})
             
             except WebSocketDisconnect:
                 pass
             
             finally:
+                Logger.info(f"{websocket.client.host}: DISCONN -> {route.path}")
                 if route.onDisconnect:
                     try:
                         await maybeAwait(route.onDisconnect(ctx))
