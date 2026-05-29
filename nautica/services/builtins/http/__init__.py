@@ -5,7 +5,7 @@ from ....models.Service import Service
 
 class HTTPConfig(Service):
     def __init__(self):
-        pass
+        super().__init__()
     
     def onInstall(self):
         Config.Update("nautica",

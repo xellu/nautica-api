@@ -109,5 +109,3 @@ class HTTPServer(Service):
         )
     
 Service.Export(HTTPServer, depends_on=["HTTPRouter", "WebSocket"])
-
-#TODO: file handling

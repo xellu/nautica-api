@@ -1,6 +1,7 @@
 # Nautica V3
 
-Nautica V3 _(also referred to as Nautica API, Nautica3, N3)_ is a modular application framework built around a service registry. It provides you with a structured way to manage components of your applications, such as HTTP or Socket servers, background workers, etc.
+Nautica V3 _(or N3)_ is a backend platform for Python. It gives you a managed runtime environment with a service registry, lifecycle system, CLI, and built-in 
+tools, saving you time from putting your app together and more time building it.
 
 ## What's Included
 - **Service Registry** with dependency resolver
@@ -27,14 +28,14 @@ To create a project, use the CLI ([docs](https://github.com/xellu/nautica-api/wi
 ```bash
 nautica create my-project
 cd my-project
-nautica run .
+nautica run
 ```
 
 To setup an existing project:
 ```bash
 cd my-project
 nautica install
-nautica run .
+nautica run
 ```
 
 ***

@@ -64,8 +64,12 @@ class ServiceRegistryManager:
 
     def onInstall(self):
         for serv in self._prioritize(self.startQueue):
-            serv.onInstall()
-            Logger.debug(f"Service Installed: {serv._getName()}")
+            try:
+                serv.onInstall()
+            except Exception as e:
+                Logger.trace(e)
+            else:
+                Logger.debug(f"Service Installed: {serv._getName()}")
         Logger.ok(f"Installed {len(self.startQueue)} services")
 
     def _topoSort(self, queue: list) -> list: #guess school is useful for something after all lol
@@ -106,10 +110,15 @@ class ServiceRegistryManager:
                     
                     self.onClose("Failed to initialize") #crash
                     return
-                    
-            serv.onInstall()
-            serv._onStart(self)
-            Logger.ok(f"Service started: {serv._getName()}")
+            try:
+                serv.onInstall()
+                serv._onStart(self)
+            except Exception as e:
+                Logger.trace(e)
+                self.onClose(f"Unable to initialize")
+                return
+            else:
+                Logger.ok(f"Service started: {serv._getName()}")
 
         self.autoStart = True
         self.startQueue = []
@@ -123,8 +132,12 @@ class ServiceRegistryManager:
     def onClose(self, reason: str | None = None):
         Logger.info(f"Stopping all services... {reason=}")
         for serv in self.instances:
-            serv._onClose(reason, _avoidUnreg=True)
-            Logger.ok(f"Service stopped: {serv._getName()}")
+            try:
+                serv._onClose(reason, _avoidUnreg=True)
+            except Exception as e:
+                Logger.trace(e)
+            else:
+                Logger.ok(f"Service stopped: {serv._getName()}")
         
         self.instances = set()
         self.should_exit = True
