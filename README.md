@@ -8,6 +8,8 @@
 Nautica V3 _(or N3)_ is a backend platform for Python. It gives you a managed runtime environment with a service registry, lifecycle system, CLI, and built-in 
 tools, saving you time from putting your app together and giving you more time to build it.
 
+<img width="1589" height="690" alt="hjkl rsdfgkhjlfgjkl" src="https://github.com/user-attachments/assets/e32e112b-5e62-4e0e-aeae-e6fdd0a36d90" />
+
 ## What's Included
 - **Service Registry** with dependency resolver
 - **Lifecycle hooks** for install, start and shutdown
