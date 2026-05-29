@@ -44,7 +44,7 @@ class ServiceRegistryManager:
     def ImportAll(self):
         #import builtin services
         from .builtins.__init__ import System
-        from .builtins import http, shell
+        from .builtins import http, websocket, shell
         
         Logger.info("Imported built-in services")
         

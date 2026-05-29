@@ -10,7 +10,7 @@ class HTTPConfig(Service):
     def onInstall(self):
         Config.Update("nautica",
             ConfigBuilder()
-                .add("services.http", True, comment="Enables the HTTP Server service")
+                .add("services.http", False, comment="Enables the HTTP Server service")
                 
                 .add("http.host", "127.0.0.1", comment="Use 0.0.0.0 to expose your app, 127.0.0.1 to keep local")
                 .add("http.port", 8100, comment="Port to host the app on, by default is set to 8100")

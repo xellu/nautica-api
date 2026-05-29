@@ -104,3 +104,26 @@ def ramUsage():
     
     p = psutil.Process()
     Logger.info(f"RAM Usage: {p.memory_info().rss/1024/1024:.1f}MB")
+    
+@RegisterCommand("clearlogs", "Delete all log files (only in debug mode)")
+def clearLogs():
+    if not Config("nautica")["nautica.debug"]:
+        Logger.error("This command is disabled in production")
+        return
+    
+    from .....ext.Static import log_file
+    from .....ext.Util import walkPath, rmFile
+    
+    removed = 0
+    for file in walkPath(".logs"):
+        if not file.endswith(".log"): continue
+        if os.path.basename(file) == log_file: continue #skip current file
+
+        ok, _, _ = rmFile(file)
+        if not ok:
+            Logger.error(f"Failed to remove '{file}'")
+            continue
+        
+        removed += 1
+        
+    Logger.ok(f"Removed {removed} log files")

@@ -3,7 +3,7 @@ from ....models.Http import InFlightRouteData
 from ....manager import Logger, Config
 
 from ....ext.Util import walkPath, importModule
-from napi.http import Router
+from napi.http import _HTTPRouter
 
 import os
 class HTTPRouter(Service):
@@ -41,7 +41,7 @@ class HTTPRouter(Service):
             if not file.endswith(".py"): continue
             
             importModule(file)
-            for PreFlightRoute in Router.temp:
+            for PreFlightRoute in _HTTPRouter.temp:
                 path = f"{self.pathToRoute(file)}/{PreFlightRoute.getName()}"
                 path = path.replace("//", "/").replace("..", "")
                 
@@ -53,9 +53,8 @@ class HTTPRouter(Service):
                 # print(route.getMethod(), route.getPath(), route.getRequirements().getBody())
                 self.routes.append(route)
                 
-                
             imported += 1
         
-        Logger.info(f"Imported {imported} route files")
+        Logger.info(f"Processed {imported} files, registered {len(self.routes)} endpoints")
         
 Service.Export(HTTPRouter, srcDir = "http", depends_on=["HTTPConfig"])

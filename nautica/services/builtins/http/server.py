@@ -7,7 +7,7 @@ from ....ext.StatusCodes import NOT_FOUND
 
 from starlette.applications import Starlette
 from starlette.staticfiles import StaticFiles
-from starlette.routing import Route, Mount
+from starlette.routing import Route, Mount, WebSocketRoute
 from starlette.requests import Request
 from starlette.exceptions import HTTPException
 from starlette.middleware.cors import CORSMiddleware
@@ -25,6 +25,8 @@ class HTTPServer(Service):
         self.thread = None
         self.server = None
         
+        self.registry = None
+        
         
     def isEnabled(self):
         return Config("nautica")["services.http"]
@@ -33,6 +35,7 @@ class HTTPServer(Service):
         super().onStart(registry)
 
         self.router = registry.Get("HTTPRouter")
+        self.registry = registry
 
         self.app = Starlette(
             debug = Config("nautica")["nautica.debug"],
@@ -74,6 +77,8 @@ class HTTPServer(Service):
 
     def transformRoutes(self):
         out = []
+        
+        #regular routes
         for r in self.router.routes:
             out.append(
                 Route(r.getPath(), r.getFunc(), methods=[r.getMethod()])
@@ -85,13 +90,24 @@ class HTTPServer(Service):
                 Mount(Config("nautica")["http.static.endpoint"], app=StaticFiles(directory=Config("nautica")["http.static.directory"]))
             )
             Logger.ok("Enabled static directory")
+        
+        #websocket routes
+        ws = self.registry["WebSocket"]
+        if not ws:
+            return out #return routes if websockets are disabled, before adding ws routes
+        
+        for r in ws.routes:
+            out.append(
+                WebSocketRoute(r.path, ws.createHandler(r))
+            )
+            
         return out
-    
+        
     async def handle_404(self, request: Request, exc: HTTPException):
         return Middleware.constructResponse(
             ErrorReply(NOT_FOUND, details={"exception": str(exc)}).toReply(), NOT_FOUND
         )
     
-Service.Export(HTTPServer, depends_on=["HTTPRouter"])
+Service.Export(HTTPServer, depends_on=["HTTPRouter", "WebSocket"])
 
 #TODO: file handling

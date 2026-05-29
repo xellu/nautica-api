@@ -88,4 +88,4 @@ class RouteManager:
     
         
 
-HTTP = Router = RouteManager()
+HTTP = _HTTPRouter = RouteManager()

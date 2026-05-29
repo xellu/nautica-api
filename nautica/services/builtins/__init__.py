@@ -23,7 +23,7 @@ class System(Service):
                 .add("description", "A Nautica3 Project")
                 .add("author", [os.getlogin()])
 
-                .add("app.dependsOn", [], "Your project's dependencies, to add use: nautica install <package>")
+                .add("app.dependsOn", [], "Your project's dependencies, to add use: nautica install <package>") #TODO: add package manager
                 .build()
         )
         

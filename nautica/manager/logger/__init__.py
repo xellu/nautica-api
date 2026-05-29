@@ -66,7 +66,7 @@ class LogManager:
         name = []
         for i, part in enumerate(n):
             if i == 0 or i == len(n)-1: name.append(part)
-            elif i == len(n) - 2: name.append(part[:4] if len(part) > 5 else part)
+            elif i == len(n) - 2: name.append(f"{part[:4]}." if len(part) > 5 else part)
             else: name.append(".") 
         return ".".join(name)
 
