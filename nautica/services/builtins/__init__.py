@@ -13,7 +13,7 @@ class System(Service):
         #config.n3
         Config.New("nautica",
             ConfigBuilder()
-                .add("nautica.debug", True, "Enables tools and endpoints useful of debugging")
+                .add("nautica.debug", False, "Enables tools and endpoints useful of debugging")
                 .build()
         )
         

@@ -37,6 +37,9 @@ class ConfigManager:
             raise LookupError(f"Unable to find '{configId}' in configs, is it registered?")
         return self.sub_configs[configId]
     
+    def Exists(self, configId) -> bool:
+        return configId in self.sub_configs
+    
     def New(self, configId, template):
         if self.sub_configs.get(configId):
             raise KeyError(f"Config with id '{configId}' is already registered")
@@ -52,7 +55,7 @@ class ConfigManager:
         cfg = SubConfig(path=path, template=template)
         self.sub_configs[configId] = cfg
 
-        logger.ok(f"Registered config '{configId}' at '{path}'")
+        logger.debug(f"Registered config '{configId}' at '{path}'")
         self.Update(configId, template) #cuh it doesnt update for certain configs
         
     def _merge_missing(self, target, source):

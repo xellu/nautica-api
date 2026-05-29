@@ -29,7 +29,7 @@ class SubConfig:
             if self.fault_retry_count > 1:
                 logger.warning(f"Unable to load configuration file, attempting automatic overwrite ({self.fault_retry_count}/{self.fault_retry_threshold})")
             else:
-                logger.info(f"Creating config file at '{self.path}'...")
+                logger.debug(f"Creating config file at '{self.path}'...")
 
             self.update_keys()
             self.load()

@@ -11,7 +11,7 @@ from ..manager.config import ROOT_CONFIGS
 from ..services import Services
 
 @cli.command()
-@click.argument("path", type=str)
+@click.argument("path", type=str, default=".", required=False)
 def run(path: str = "."):
     print(f"{Fore.BLUE}{banner()}{Fore.RESET}")
 

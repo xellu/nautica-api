@@ -46,7 +46,7 @@ class ServiceRegistryManager:
         from .builtins.__init__ import System
         from .builtins import http, websocket, shell
         
-        Logger.info("Imported built-in services")
+        # Logger.info("Imported built-in services")
         
         os.makedirs("plugins", exist_ok=True)
         
@@ -56,7 +56,8 @@ class ServiceRegistryManager:
             
             importModule(os.path.join("plugins", f))
             imported += 1
-        Logger.ok(f"Imported {imported} plugins")
+            
+        if imported > 0: Logger.info(f"Imported {imported} plugins")
     
     def _prioritize(self, queue: list) -> list:
         return sorted(queue, key=lambda s: 0 if s._getName() == "System" else 1)
@@ -64,7 +65,7 @@ class ServiceRegistryManager:
     def onInstall(self):
         for serv in self._prioritize(self.startQueue):
             serv.onInstall()
-            Logger.ok(f"Service Installed: {serv._getName()}")
+            Logger.debug(f"Service Installed: {serv._getName()}")
         Logger.ok(f"Installed {len(self.startQueue)} services")
 
     def _topoSort(self, queue: list) -> list: #guess school is useful for something after all lol
@@ -96,7 +97,7 @@ class ServiceRegistryManager:
     def onStart(self):
         for serv in self._topoSort(self._prioritize(self.startQueue)):
             if not serv.isEnabled():
-                Logger.warn(f"Service disabled: {serv._getName()}")
+                Logger.info(f"Service disabled: {serv._getName()}")
                 continue #skip disabled services
             
             for dep in serv._depends_on: #crash on dependency error

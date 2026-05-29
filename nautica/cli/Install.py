@@ -12,7 +12,7 @@ from ..services import Registry
 
 @cli.command(aliases=["i"])
 def install():
-    print(f"{Fore.BLUE}{banner()}{Fore.RESET}")
+    # print(f"{Fore.BLUE}{banner()}{Fore.RESET}")
 
     Logger.info("Validating project configuration...")    
     for path in ROOT_CONFIGS.values():
@@ -27,9 +27,3 @@ def install():
     
     Registry.ImportAll()
     Registry.onInstall()
-    
-    Logger.ok("Services Installed")
-    
-    Logger.table() \
-        .labels(["Services Installed"]) \
-        .display(LogLevel.DEBUG)
