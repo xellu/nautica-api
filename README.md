@@ -1,7 +1,7 @@
 # Nautica V3
 
 ![PyPI Version](https://img.shields.io/pypi/v/nautica)
-![Python Versions](https://img.shields.io/pypi/pyversions/nautica)
+![Python](https://img.shields.io/badge/python-3.11+-blue)
 ![License](https://img.shields.io/github/license/xellu/nautica-api)
 ![PyPI Downloads](https://img.shields.io/pypi/dm/nautica)
 
