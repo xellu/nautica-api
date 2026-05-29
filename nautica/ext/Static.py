@@ -1,6 +1,6 @@
 import time
 
-RELEASE = "3.0.1"
+RELEASE = "3.0.2"
 EDITION = "Standard Edition"
 
 log_file = f"nautica_{time.strftime('%d_%m_%y__%H_%M_%S', time.localtime())}.log"
