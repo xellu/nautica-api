@@ -1,7 +1,12 @@
 # Nautica V3
 
+![PyPI Version](https://img.shields.io/pypi/v/nautica)
+![Python Versions](https://img.shields.io/pypi/pyversions/nautica)
+![License](https://img.shields.io/github/license/xellu/nautica-api)
+![PyPI Downloads](https://img.shields.io/pypi/dm/nautica)
+
 Nautica V3 _(or N3)_ is a backend platform for Python. It gives you a managed runtime environment with a service registry, lifecycle system, CLI, and built-in 
-tools, saving you time from putting your app together and more time building it.
+tools, saving you time from putting your app together and giving you more time to build it.
 
 ## What's Included
 - **Service Registry** with dependency resolver
