@@ -5,5 +5,7 @@ from .logger import LogManager, LogLevel, LogMemory
 
 from .memory import MemoryManager
 
+from .scheduler import Scheduler
+
 Logger = LogManager()
 Config = ConfigManager()

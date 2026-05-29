@@ -15,7 +15,6 @@ class WebSocket(Service):
         super().__init__()
         
         self.routes: list[WSRoute] = []
-        self.conns = []
         
     def onInstall(self):
         Config.Update("nautica", ConfigBuilder()
@@ -53,7 +52,6 @@ class WebSocket(Service):
     def createHandler(self, route: WSRoute):
         async def handler(websocket: StarletteWS):
             await websocket.accept()
-            self.conns.append(websocket)
             ctx = WebSocketContext(websocket)
             
             Logger.info(f"{websocket.client.host}: CONN -> {route.path}")

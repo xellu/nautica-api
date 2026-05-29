@@ -1,7 +1,10 @@
 from ...models.Service import Service
-from ...manager import Config, ConfigBuilder
+from ...manager import Config, ConfigBuilder, Scheduler
 
 import os
+import asyncio
+import threading
+
 class System(Service):
     def __init__(self):
         pass
@@ -28,9 +31,13 @@ class System(Service):
         )
         
     def onStart(self, registry):
-        # self.onInstall() #just to initialize the config files
-        # ^not needed anymore, onInstall is called ONCE, when server is starting
-        ...
+        threading.Thread(
+            target = self.runScheduler,
+            daemon = True
+        ).start()
+    
+    def runScheduler(self):
+        asyncio.run(Scheduler._loop())
         
         
 Service.Export(System)
