@@ -103,7 +103,7 @@ class RequirementParser:
                         _type(value)
                 except (ValueError, TypeError):
                     add_error(f"Key '{k}' has to match '{RouteRequirements.typeToString(_type)}', got unconvertible value '{value}'")
-                finally:
+                else:
                     source[k] = _type(value)
             else:
                 if not isinstance(value, _type):

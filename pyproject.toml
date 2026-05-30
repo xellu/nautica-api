@@ -30,6 +30,8 @@ include = ["nautica*", "napi*"]
 
 [project.scripts]
 nautica = "nautica.__main__:cli"
+napi = "nautica.__main__:cli"
+
 
 [project.urls]
 Homepage = "https://github.com/xellu/nautica-api"

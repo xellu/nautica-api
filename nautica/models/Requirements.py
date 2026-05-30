@@ -94,11 +94,11 @@ class File(Requirement):
         #     return False
         
         if self.mime and content.mime not in self.mime:
-            print("doesnt match mime")
+            # print("doesnt match mime")
             return False
         
         if self.max_size and content.size > self.max_size:
-            print("too big")
+            # print("too big")
             return False
         return True
     
