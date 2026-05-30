@@ -50,7 +50,7 @@ class RequirementParser:
         needed = self.route.getRequirements()
         
         if needed is None:
-            return RequirementResponse(ok=True)
+            needed = RouteRequirements()
         
         #get all the bs
         headers = request.headers
