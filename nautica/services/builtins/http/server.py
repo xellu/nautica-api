@@ -53,7 +53,8 @@ class HTTPServer(Service):
                     allow_origins = Config("nautica")["http.cors.origins"],
                     allow_methods = Config("nautica")["http.cors.methods"],
                     allow_headers = Config("nautica")["http.cors.headers"],
-                    allow_credentials = Config("nautica")["http.cors.credentials"], 
+                    allow_credentials = Config("nautica")["http.cors.credentials"],
+                    expose_headers = Config("nautica")["http.cors.exposeHeaders"]
             )
         
         self.thread = t = threading.Thread(target=self._run)
