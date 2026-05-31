@@ -58,6 +58,7 @@ MANIFEST
 .logs/
 .testenv/
 config/
+package.zip
 
 # PyInstaller
 *.manifest

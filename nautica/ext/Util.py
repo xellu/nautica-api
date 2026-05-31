@@ -69,9 +69,9 @@ def getGitIgnoredPaths(paths: list[str]) -> list[str]:
             
     return new
 
-def importModule(path):
+def importModule(path, name: str | None = None):
     path = os.path.abspath(path)
-    name = os.path.splitext(os.path.basename(path))[0]
+    name = name or os.path.splitext(os.path.basename(path))[0]
 
     cwd = os.getcwd()
     added = False

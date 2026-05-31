@@ -23,6 +23,7 @@ dependencies = [
     "psutil",
     "textual",
     "pathspec",
+    "requests",
 ]
 
 [tool.setuptools.packages.find]

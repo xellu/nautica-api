@@ -52,9 +52,11 @@ class ServiceRegistryManager:
         
         imported = 0
         for f in os.listdir("plugins"): #not using walkPath on purpose
-            if not f.endswith(".py") or os.path.isdir(f): continue
+            isDir = os.path.isdir(os.path.join("plugins", f))
+            if not f.endswith(".py") or isDir: continue
             
-            importModule(os.path.join("plugins", f))
+            name = f"plugins.{os.path.splitext(f)[0] if not isDir else f}"
+            importModule(os.path.join("plugins", f), name)
             imported += 1
             
         if imported > 0: Logger.info(f"Imported {imported} plugins")
