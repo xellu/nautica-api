@@ -51,14 +51,18 @@ class ServiceRegistryManager:
         os.makedirs("plugins", exist_ok=True)
         
         imported = 0
-        for f in os.listdir("plugins"): #not using walkPath on purpose
-            isDir = os.path.isdir(os.path.join("plugins", f))
-            if not f.endswith(".py") or isDir: continue
-            
-            name = f"plugins.{os.path.splitext(f)[0] if not isDir else f}"
-            importModule(os.path.join("plugins", f), name)
+        for f in os.listdir("plugins"):
+            full_path = os.path.join("plugins", f)
+            if os.path.isdir(full_path):
+                init = os.path.join(full_path, "__init__.py")
+                if not os.path.exists(init): continue
+                importModule(init, name=f"plugins.{f}")
+            elif f.endswith(".py"):
+                importModule(full_path, name=f"plugins.{os.path.splitext(f)[0]}")
+            else:
+                continue
             imported += 1
-            
+                    
         if imported > 0: Logger.info(f"Imported {imported} plugins")
     
     def _prioritize(self, queue: list) -> list:
