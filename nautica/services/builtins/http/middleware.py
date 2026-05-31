@@ -73,17 +73,11 @@ class Middleware:
             return result
         
         except ErrorReply as e:
-            return self.handleReply(e.toReply(), e.status_code)
+            raise e
         
         except Exception as e:
             Logger.trace(e)
-            return self.handleReply(
-                ErrorReply(
-                    errorMessage = "Failed to process your request",
-                    details = {"exception": str(e)}
-                ).toReply(),
-                status_code = INTERNAL_SERVER_ERROR
-            )
+            raise ErrorReply(INTERNAL_SERVER_ERROR, "Failed to process your request", details={"exception": str(e)})
 
     def decorator(self, func):
         original = inspect.unwrap(func)
@@ -121,20 +115,24 @@ class Middleware:
             if Config("nautica")["http.realIPHeader"]:
                 ctx.clientIp = request.headers.get(Config("nautica")["http.realIPHeader"])
     
-
             #run before request handlers
             for handler in route.getBeforeHandlers():
-                result = await self.run_handler(handler, request, ctx)
-                if result is not None:
-                    return self.constructResponse(result)
-    
-
+                try:
+                    result = await self.run_handler(handler, request, ctx)
+                    if result is not None:
+                        return self.constructResponse(result)
+                except ErrorReply as e:
+                    return self.handleReply(e.toReply(), e.status_code)
+                
             #run request
             try:
                 ctx.response = self.constructResponse( await self.run_handler(original, request, ctx) )
+            except ErrorReply as e:
+                return self.handleReply(e.toReply(), e.status_code)
+
             except Exception as e:
                 Logger.trace(e)
-                return self.handleReply(
+                return self.constructResponse(
                     ErrorReply(
                         errorMessage  ="Failed to construct a response for your request",
                         details = {"exception": str(e)}
