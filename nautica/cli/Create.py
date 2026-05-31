@@ -13,6 +13,15 @@ from ..services import Registry
 @cli.command()
 @click.argument("name", type=str)
 def create(name):
+    _create(name)
+    
+    Logger.table() \
+        .labels(["Project Created! Get Started by running:"]) \
+        .row([f"cd {name}"]).row(["nautica install"]).row(["nautica run ."]) \
+        .row([""]).row(["Thank you for using Nautica3!"]) \
+        .display(LogLevel.INFO)
+    
+def _create(name):
     # print(f"{Fore.BLUE}{banner()}{Fore.RESET}")
     if os.path.exists(name) and len(walkPath(name, include_dirs=True)) > 0:
         Logger.error(f"A Non-empty directory with this name already exists")
@@ -41,9 +50,3 @@ def create(name):
         
     #clean up
     os.chdir(prev_dir)
-    
-    Logger.table() \
-        .labels(["Project Created! Get Started by running:"]) \
-        .row([f"cd {name}"]).row(["nautica install"]).row(["nautica run ."]) \
-        .row([""]).row(["Thank you for using Nautica3!"]) \
-        .display(LogLevel.INFO)

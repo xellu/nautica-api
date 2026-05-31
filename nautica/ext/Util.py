@@ -6,6 +6,11 @@ import os
 import re
 import sys
 import importlib.util
+from pathspec import PathSpec
+from .Static import GitIgnore
+
+GitIgnoreSpec = PathSpec.from_lines("gitwildmatch", GitIgnore.splitlines())
+
 
 async def maybeAwait(result):
     if inspect.isawaitable(result):
@@ -44,6 +49,25 @@ def walkPath(dir_path: str, include_dirs=False):
         tree.append(path)
 
     return tree
+
+def filterPathsGitIgnore(paths: list[str]) -> list[str]:
+    new = []
+    for p in paths:
+        if not GitIgnoreSpec.match_file(p):
+            new.append(p)
+            
+    return new
+
+def isGitIgnored(path: str) -> bool:
+    return GitIgnoreSpec.match_file(path)
+
+def getGitIgnoredPaths(paths: list[str]) -> list[str]:
+    new = []
+    for p in paths:
+        if GitIgnoreSpec.match_file(p):
+            new.append(p)
+            
+    return new
 
 def importModule(path):
     path = os.path.abspath(path)

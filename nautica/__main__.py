@@ -2,7 +2,8 @@ from .cli import cli
 from .cli import (
     Create,
     Install,
-    Run
+    Run,
+    PackageManager
 )
 
 if __name__ == "__main__":

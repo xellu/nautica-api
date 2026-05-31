@@ -13,13 +13,19 @@ from ..services import Services
 @cli.command()
 @click.argument("path", type=str, default=".", required=False)
 def run(path: str = "."):
+    _run(path)
+    
+def _run(path):
     print(f"{Fore.BLUE}{banner()}{Fore.RESET}")
+
+    os.chdir(path)
 
     Logger.info("Validating project configuration...")    
     for path in ROOT_CONFIGS.values():
         if not os.path.exists(path):
             Logger.error(f"Project config '{path}' is missing!")
             return
+        
         
     Services.ImportAll()
     Services.onStart()

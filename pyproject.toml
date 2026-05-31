@@ -21,7 +21,8 @@ dependencies = [
     "tomlkit",
     "click",
     "psutil",
-    "textual"
+    "textual",
+    "pathspec",
 ]
 
 [tool.setuptools.packages.find]

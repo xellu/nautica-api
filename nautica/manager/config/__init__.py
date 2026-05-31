@@ -9,6 +9,9 @@ ROOT_CONFIGS = {
     "nautica": "config.n3",
     "package": "package.n3",
 }
+OPTIONAL_CONFIGS = {
+    "projectdev": "project.n3"
+}
 
 class ConfigManager:
     def __init__(self):
@@ -16,21 +19,6 @@ class ConfigManager:
 
         self.masterCfg = tomlkit.document()
         self.sub_configs = {}
-
-    def getMissingKeys(self, source, template, rel_path: list[str] | None = None):
-        rel_path = rel_path if isinstance(rel_path, list) else []
-        if not isinstance(source, Mapping):
-            return [".".join(rel_path) + " (not a table)"]
-
-        missing = []
-        for k, v in template.items():
-            cur_path = rel_path.copy() + [k]
-            if k not in source:
-                missing.append(".".join(cur_path))
-            if isinstance(v, Mapping):
-                missing += self.getMissingKeys(source.get(k), v, rel_path=cur_path)
-
-        return missing
 
     def __call__(self, configId):
         if configId not in self.sub_configs:
@@ -46,11 +34,15 @@ class ConfigManager:
         
         from ...manager import Logger as logger
 
-        configs_dir = "config"
-        os.makedirs(configs_dir, exist_ok=True)
-        path = os.path.join(configs_dir, f"{configId}.toml")
         if configId in ROOT_CONFIGS.keys():
             path = ROOT_CONFIGS[configId]
+        elif configId in OPTIONAL_CONFIGS.keys():
+            path = OPTIONAL_CONFIGS[configId]
+        else:
+            configs_dir = "config"
+            os.makedirs(configs_dir, exist_ok=True)
+            path = os.path.join(configs_dir, f"{configId}.toml")
+            
 
         cfg = SubConfig(path=path, template=template)
         self.sub_configs[configId] = cfg
