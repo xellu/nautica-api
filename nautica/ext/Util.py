@@ -74,10 +74,10 @@ def importModule(path, name: str | None = None):
     path = os.path.abspath(path)
     name = name or os.path.splitext(os.path.basename(path))[0]
 
-    cwd = os.getcwd()
+    root = getRoot()  # get project root
     added = False
-    if cwd not in sys.path:
-        sys.path.insert(0, cwd)
+    if root not in sys.path:
+        sys.path.insert(0, root)
         added = True
 
     try:
@@ -86,8 +86,8 @@ def importModule(path, name: str | None = None):
         spec.loader.exec_module(module)
         return module
     finally:
-        if added and cwd in sys.path:
-            sys.path.remove(cwd)
+        if added and root in sys.path:
+            sys.path.remove(root)
 
 def getExt(fileName):
     if len(fileName.split("."))  <= 1: return ""
