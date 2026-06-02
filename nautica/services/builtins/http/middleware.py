@@ -79,6 +79,15 @@ class Middleware:
             Logger.trace(e)
             raise ErrorReply(INTERNAL_SERVER_ERROR, "Failed to process your request", details={"exception": str(e)})
 
+    def log_response(ctx: RequestContext, status_code: int = None):
+        status = status_code or ctx.response.status_code
+        
+        log_msg = f"{ctx.clientIp}: {ctx.request.method.upper()} -> {ctx.url.path} ({status} {getMessage(status)})"
+        if isSuccess(status): Logger.ok(log_msg)
+        elif isClientError(status): Logger.warn(log_msg)
+        elif isServerError(status): Logger.error(log_msg)
+        else: Logger.info(log_msg)
+
     def decorator(self, func):
         original = inspect.unwrap(func)
 
@@ -100,6 +109,7 @@ class Middleware:
                 #process requirements
                 args: RequirementResponse = await RequirementParser(route).Extract(request)
                 if not args.ok:
+                    self.log_response(ctx, UNPROCESSABLE_CONTENT)
                     return self.handleReply(
                         ErrorReply(errorMessage = "Request does not match a defined schema", details=args.missingData).toReply(),
                         status_code = UNPROCESSABLE_CONTENT #dont provide error reply with status code directly, it does not handleReply, nor toReply handle that
@@ -122,16 +132,19 @@ class Middleware:
                     if result is not None:
                         return self.constructResponse(result)
                 except ErrorReply as e:
+                    self.log_response(ctx, e.status_code)
                     return self.handleReply(e.toReply(), e.status_code)
                 
             #run request
             try:
                 ctx.response = self.constructResponse( await self.run_handler(original, request, ctx) )
             except ErrorReply as e:
+                self.log_response(ctx, e.status_code)
                 return self.handleReply(e.toReply(), e.status_code)
 
             except Exception as e:
                 Logger.trace(e)
+                self.log_response(ctx, INTERNAL_SERVER_ERROR)
                 return self.constructResponse(
                     ErrorReply(
                         errorMessage  ="Failed to construct a response for your request",
@@ -147,12 +160,7 @@ class Middleware:
                 self.run_handler(handler, request, ctx)
             
             #return a constructed reply and log results
-            log_msg = f"{ctx.clientIp}: {ctx.request.method.upper()} -> {request.url.path} ({ctx.response.status_code} {getMessage(ctx.response.status_code)})"
-            if isSuccess(ctx.response.status_code): Logger.ok(log_msg)
-            elif isClientError(ctx.response.status_code): Logger.warn(log_msg)
-            elif isServerError(ctx.response.status_code): Logger.error(log_msg)
-            else: Logger.info(log_msg)
-            
+            self.log_response(ctx)
             return ctx.response
                 
         self.manager.temp.append(PreFlightRouteData(
