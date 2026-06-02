@@ -1,4 +1,5 @@
 from ...ext.Static import log_file
+from ...ext.Path import getRoot
 from ..memory import MemoryManager
 from .levels import LogLevel, LevelColors
 from .tableutil import TableUtil
@@ -8,7 +9,6 @@ import sys
 import time
 import traceback
 import threading
-import inspect
 from ..config import ROOT_CONFIGS
 from colorama import Fore
 
@@ -25,14 +25,14 @@ class LogManager:
         """
         
         self.level: LogLevel = level
-        self._path = os.path.join(".logs", log_file)
+        self._path = getRoot(".logs", log_file)
         self._lock = threading.Lock()
         
-        self._disable_writes = not os.path.exists(ROOT_CONFIGS["nautica"])
+        self._disable_writes = not os.path.exists(getRoot(ROOT_CONFIGS["nautica"]))
                 
         if not self._disable_writes:
             #create log file
-            os.makedirs(".logs", exist_ok=True)
+            os.makedirs(getRoot(".logs"), exist_ok=True)
             if not os.path.exists(self._path):
                 open(self._path, "x", encoding="utf-8").close()
             

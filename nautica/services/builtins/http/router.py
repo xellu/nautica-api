@@ -3,6 +3,7 @@ from ....models.Http import InFlightRouteData
 from ....manager import Logger, Config
 
 from ....ext.Util import walkPath, importModule
+from ....ext.Path import getRoot
 from napi.http import _HTTPRouter
 
 import os
@@ -13,7 +14,7 @@ class HTTPRouter(Service):
         self.routes: list[InFlightRouteData] = []
     
     def pathToRoute(self, path):
-        path = path.replace(".py", "").replace("src/http", "")
+        path = path.replace(".py", "").replace(getRoot("src/http").replace("\\", "/"), "")
         path = path.replace("\\", "/")
         if os.path.basename(path) == "+root":
             path = path.split("/")
@@ -37,7 +38,7 @@ class HTTPRouter(Service):
     def onStart(self, registry):
         #import all files
         imported = 0
-        for file in walkPath("src/http"):
+        for file in walkPath(getRoot("src/http")):
             if not file.endswith(".py"): continue
             
             importModule(file)

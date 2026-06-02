@@ -2,6 +2,7 @@ from ..models.Service import Service
 from ..manager import Logger, Config
 
 from ..ext.Util import importModule
+from ..ext.Path import getRoot
 
 import os
 import time
@@ -48,11 +49,11 @@ class ServiceRegistryManager:
         
         # Logger.info("Imported built-in services")
         
-        os.makedirs("plugins", exist_ok=True)
-        
+        os.makedirs(getRoot("plugins"), exist_ok=True)
+
         imported = 0
-        for f in os.listdir("plugins"):
-            full_path = os.path.join("plugins", f)
+        for f in os.listdir(getRoot("plugins")):
+            full_path = getRoot("plugins", f)
             if os.path.isdir(full_path):
                 init = os.path.join(full_path, "__init__.py")
                 if not os.path.exists(init): continue

@@ -113,9 +113,10 @@ def clearLogs():
     
     from .....ext.Static import log_file
     from .....ext.Util import walkPath, rmFile
-    
+    from .....ext.Path import getRoot
+
     removed = 0
-    for file in walkPath(".logs"):
+    for file in walkPath(getRoot(".logs")):
         if not file.endswith(".log"): continue
         if os.path.basename(file) == log_file: continue #skip current file
 

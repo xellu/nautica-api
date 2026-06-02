@@ -3,6 +3,7 @@ from ....models.Service import Service
 from ....models.Websocket import WSRoute, WebSocketContext, WSError
 from ....manager import Config, ConfigBuilder
 from ....ext.Util import walkPath, importModule, maybeAwait
+from ....ext.Path import getRoot
 
 from starlette.websockets import WebSocketDisconnect, WebSocket as StarletteWS
 
@@ -26,7 +27,7 @@ class WebSocket(Service):
         return Config("nautica")["http.websockets"] and Config("nautica")["services.http"]
         
     def onStart(self, registry):
-        for file in walkPath(f"src/ws"):
+        for file in walkPath(getRoot("src/ws")):
             if not file.endswith(".py"): continue
             
             importModule(file)
@@ -39,7 +40,7 @@ class WebSocket(Service):
         Logger.info(f"Registered {len(self.routes)} WebSocket endpoints")
  
     def pathToRoute(self, path):
-        path = path.replace(".py", "").replace("src/ws", "")
+        path = path.replace(".py", "").replace(getRoot("src/ws").replace("\\", "/"), "")
         path = path.replace("\\", "/")
         if os.path.basename(path) == "+root":
             path = path.split("/")

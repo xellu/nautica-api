@@ -8,8 +8,9 @@ import sys
 import importlib.util
 from pathspec import PathSpec
 from .Static import GitIgnore
+from .Path import getRoot
 
-GitIgnoreSpec = PathSpec.from_lines("gitwildmatch", GitIgnore.splitlines())
+GitIgnoreSpec = PathSpec.from_lines("gitwildmatch", GitIgnore.splitlines() + [".git/"])
 
 
 async def maybeAwait(result):

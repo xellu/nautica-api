@@ -3,6 +3,7 @@ import os
 from collections.abc import Mapping
 
 from .helper import SubConfig
+from ...ext.Path import getRoot
 # from .preset import ConfigPresetTOML
 
 ROOT_CONFIGS = {
@@ -35,13 +36,12 @@ class ConfigManager:
         from ...manager import Logger as logger
 
         if configId in ROOT_CONFIGS.keys():
-            path = ROOT_CONFIGS[configId]
+            path = getRoot(ROOT_CONFIGS[configId])
         elif configId in OPTIONAL_CONFIGS.keys():
-            path = OPTIONAL_CONFIGS[configId]
+            path = getRoot(OPTIONAL_CONFIGS[configId])
         else:
-            configs_dir = "config"
-            os.makedirs(configs_dir, exist_ok=True)
-            path = os.path.join(configs_dir, f"{configId}.toml")
+            os.makedirs(getRoot("config"), exist_ok=True)
+            path = getRoot("config", f"{configId}.toml")
             
 
         cfg = SubConfig(path=path, template=template)

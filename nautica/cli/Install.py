@@ -4,6 +4,7 @@ import os
 from colorama import Fore
 
 from ..ext.Static import banner
+from ..ext.Path import getRoot
 
 from ..manager import Logger, LogLevel
 from ..manager.config import ROOT_CONFIGS
@@ -16,7 +17,7 @@ def install():
 
     Logger.info("Validating project configuration...")    
     for path in ROOT_CONFIGS.values():
-        if not os.path.exists(path):
+        if not os.path.exists(getRoot(path)):
             Logger.error(f"Project config '{path}' is missing!")
             return
     

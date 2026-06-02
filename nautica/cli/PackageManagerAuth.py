@@ -2,7 +2,6 @@ import os
 import json
 import getpass
 import requests
-from starlette.datastructures import URL
 from platformdirs import user_data_dir
 from ..manager import Logger
 from ..ext.StatusCodes import getMessage
@@ -17,7 +16,7 @@ def _load_regs() -> dict:
         with open(REGISTRIES, "r") as f:
             return json.loads(f.read())
     except Exception:
-        Logger.error("Failed to load registries, using default")
+        Logger.error("registries.json is malformed, using default registry")
         return {"active": DEFAULT_REPO, "all": [DEFAULT_REPO]}
 
 
@@ -65,7 +64,7 @@ def set_reg_url(url: str) -> bool:
 def get_all_regs() -> list[str]:
     _ensure_regs_exist()
     data = _load_regs()
-    return [URL(url).hostname for url in data.get("all", [DEFAULT_REPO])]
+    return data.get("all", [DEFAULT_REPO])
 
 
 def _parse_error(r: requests.Response) -> str:

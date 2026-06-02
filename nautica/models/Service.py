@@ -1,4 +1,5 @@
 from ..ext.Util import randomHex
+from ..ext.Path import getRoot
 from ..manager import Logger
 
 import os
@@ -28,7 +29,8 @@ class Service:
         if not isinstance(service, type) or not issubclass(service, Service):
             raise TypeError(f"Cannot export non-Service type '{service}'")
 
-        path = os.path.join("src", str(srcDir))
+        # path = os.path.join("src", str(srcDir))
+        path = getRoot("src", str(srcDir))
         if srcDir and not os.path.exists(path):
             os.makedirs(path)
 

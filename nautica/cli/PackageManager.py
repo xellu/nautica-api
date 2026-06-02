@@ -12,6 +12,7 @@ from ..services import Registry
 from ..ext.Util import walkPath, rmDir, isGitIgnored, filterPathsGitIgnore
 from ..ext.Static import PackageServiceExample, GitIgnore
 from ..ext.StatusCodes import getMessage
+from ..ext.Path import setRoot, getRoot
 
 from .PackageManagerAuth import prompt_login, login, get_all_regs, set_reg_url, get_reg_url
 
@@ -23,10 +24,10 @@ def is_valid_name(name: str):
     return True
 
 @cli.group()
-def packager():
+def package():
     pass
 
-@packager.command()
+@package.command()
 @click.argument("name", type=str)
 def create(name: str):
     if os.path.exists(name) and len(walkPath(name, include_dirs=True)) > 0:
@@ -36,45 +37,44 @@ def create(name: str):
     #prep working directory
     Logger.info("Creating project directories...")
     os.makedirs(name, exist_ok=True)
-    prev_dir = os.path.abspath(os.curdir)
 
-    os.chdir(name)
+    setRoot(name)
+    project_name = os.path.basename(os.path.abspath("."))
     
     #create config
     Config.New("projectdev", 
         ConfigBuilder()
-            .add("name", os.path.basename(os.path.abspath(".")), comment="This name will be used on the package registry; a-z0-9._-")
+            .add("name", project_name, comment="This name will be used on the package registry; a-z0-9._-")
             .add("version", "1.0.0", comment="Project version, format: https://semver.org/")
             .add("dependsOn", [], comment="List of package names that are required to run this service. Services need to be available on package registry.")
             .add("pyPackages", [], comment="List of PyPI packages this service depends on.")
             .build()
     )
     #create other files
-    with open("__init__.py", "w") as f:
+    with open(getRoot("__init__.py"), "w") as f:
         f.write(PackageServiceExample)
-    with open(".gitignore", "w") as f:
+    with open(getRoot(".gitignore"), "w") as f:
         f.write(GitIgnore)
+    with open(getRoot("README.md"), "w") as f:
+        f.write(f"# {project_name}")
     
     Logger.ok("Created project structure")
-    
-    os.chdir(prev_dir)
-    
+       
     Logger.table() \
         .labels(["Package Created!"]) \
         .row([f"cd {name}"]) \
         .row(["And edit '__init__.py'"]) \
         .row([""]).row(["Get Started:"]) \
         .row([""]).row(["1. Creating Testing Environment:"]) \
-        .row(["nautica packager envmake"]) \
-        .row(["nautica packager envinstall"]) \
+        .row(["nautica package env"]) \
         .row([""]).row(["2. Testing Your Service:"]) \
-        .row(["nautica packager test"]) \
+        .row(["nautica package test"]) \
         .row([""]).row(["3. Publishing:"]) \
-        .row(["nautica packager publish"]) \
+        .row(["nautica package publish"]) \
         .display()
     
-@packager.command()
-def envmake():
+@package.command()
+def env():
     from .Create import _create
     
     if ".testenv" in os.listdir("."): #delete old env
@@ -84,35 +84,45 @@ def envmake():
     #create env
     _create(".testenv")
     Logger.table() \
-        .labels(["Test Environment Created! To install dependencies run:"]) \
-        .row(["nautica packager envinstall"]).display()
+        .labels(["Test Environment Created! To run it:"]) \
+        .row(["nautica package test"]).display()
         
-@packager.command()
+@package.command()
 def envinstall():
     #project checks
     if ".testenv" not in os.listdir("."):
-        Logger.error("No test environment found. Run 'nautica packager envmake' to create one.")
+        Logger.error("No test environment found. Run 'nautica package env' to create one.")
         return
     
-    #install    
-    prev_dir = os.path.abspath(os.curdir)
-
-    os.chdir(".testenv")
+    #install
+    
+    setRoot(".testenv")
     Registry.ImportAll()
     Registry.onInstall()
-    os.chdir(prev_dir)
     
     Logger.table() \
         .labels(["Test Environment Installed! To run it:"]) \
-        .row(["nautica packager test"]).display()
+        .row(["nautica package test"]).display()
     
+@package.command()
+def envclean():
+    #project checks
+    if ".testenv" not in os.listdir("."):
+        Logger.error("No test environment found. Run 'nautica package env' to create one.")
+        return
+    
+    #remove configs and logs
+    for folder in [".logs", "config"]:
+        rmDir(os.path.join(".testenv", folder))
+    
+    Logger.ok("Done")
         
-@packager.command()
+@package.command()
 def test():
     #project checks
     project_files = os.listdir(".")
     if ".testenv" not in project_files:
-        Logger.error("No test environment found. Run 'nautica packager envmake' to create one.")
+        Logger.error("No test environment found. Run 'nautica package env' to create one.")
         return
     
     if "__init__.py" not in project_files:
@@ -138,9 +148,7 @@ def test():
 
     if os.path.exists(new_dir):
         rmDir(new_dir) #clean previous tests
-    
-    os.makedirs(new_dir, exist_ok=True)
-        
+            
     #copy files
     shutil.copytree(".", new_dir, ignore=is_ignored)
         
@@ -148,7 +156,7 @@ def test():
     from .Run import _run
     _run(".testenv")
     
-@packager.command()
+@package.command()
 def publish():
     #project checks
     project_files = os.listdir(".")
@@ -174,6 +182,9 @@ def publish():
 
             if not prompt_login(): return
             _, session = login()
+    except requests.ConnectionError:
+        Logger.critical("Registry unreachable")
+        return
     except Exception as e:
         Logger.trace(e)
         Logger.critical("Failed to authenticate")
@@ -208,7 +219,7 @@ def publish():
     
     Logger.ok("Package published")
 
-@packager.command()
+@package.command()
 @click.argument("url", type=str, default="", required=False)
 def registry(url: str):
     if not url:
