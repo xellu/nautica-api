@@ -3,6 +3,7 @@ from . import cli
 import os
 import click
 import shutil
+import requests
 from zipfile import ZipFile
 from platformdirs import user_data_dir
 
@@ -10,6 +11,7 @@ from ..manager import Logger, Config, ConfigBuilder
 from ..services import Registry
 from ..ext.Util import walkPath, rmDir, isGitIgnored, filterPathsGitIgnore
 from ..ext.Static import PackageServiceExample, GitIgnore
+from ..ext.StatusCodes import getMessage
 
 from .PackageManagerAuth import prompt_login, login, get_all_regs, set_reg_url, get_reg_url
 
@@ -185,6 +187,26 @@ def publish():
             z.write(f)
             
     Logger.ok("Created package archive")
+
+    #upload
+    Logger.info("Publishing...")
+    
+    url = get_reg_url()
+    with open("package.zip", "rb") as f:
+        r = requests.post(f"{url}/package/publish",
+            headers = {"Authorization": session},
+            files = {"package": f.read()}
+        )
+    
+    if not r.ok:
+        error = getMessage(r.status_code)
+        try: error = r.json().get("error", getMessage(r.status_code))
+        except: pass
+        
+        Logger.error(f"Failed to publish package: {error}")
+        return
+    
+    Logger.ok("Package published")
 
 @packager.command()
 @click.argument("url", type=str, default="", required=False)
