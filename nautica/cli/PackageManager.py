@@ -11,7 +11,7 @@ from ..services import Registry
 from ..ext.Util import walkPath, rmDir, isGitIgnored, filterPathsGitIgnore
 from ..ext.Static import PackageServiceExample, GitIgnore
 
-from .PackageManagerAuth import prompt_login, login
+from .PackageManagerAuth import prompt_login, login, get_all_regs, set_reg_url, get_reg_url
 
 
 def is_valid_name(name: str):
@@ -185,3 +185,21 @@ def publish():
             z.write(f)
             
     Logger.ok("Created package archive")
+
+@packager.command()
+@click.argument("url", type=str, default="", required=False)
+def registry(url: str):
+    if not url:
+        Logger.info(f"Selected registry: {get_reg_url()}")
+        Logger.info("List of available registries:")
+        for r in get_all_regs():
+            Logger.info(f"* {r}")
+    
+        return
+    
+    ok = set_reg_url(url)
+    if not ok:
+        Logger.error("Failed to change registry")
+        return
+    
+    Logger.ok("Registry changed")

@@ -81,13 +81,13 @@ class InFlightRouteData:
 
 class AttachedFile:
     def __init__(self, upload: UploadFile):
-        self._file = upload
+        self.file = upload
         self.filename = upload.filename
         self.mime = upload.content_type
         self.size = upload.size #updated on read
     
     async def read(self) -> bytes:
-        data = await self._file.read()
+        data = await self.file.read()
         self.size = len(data)
         return data
     
