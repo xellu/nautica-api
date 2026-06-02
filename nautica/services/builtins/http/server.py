@@ -4,6 +4,7 @@ from ....manager import Config, Logger
 from .middleware import Middleware
 from ....models.Http import ErrorReply
 from ....ext.StatusCodes import NOT_FOUND
+from ....ext.Path import getRoot
 
 from starlette.applications import Starlette
 from starlette.staticfiles import StaticFiles
@@ -88,7 +89,7 @@ class HTTPServer(Service):
         #static routes
         if Config("nautica")["http.static.enabled"]:
             out.append(
-                Mount(Config("nautica")["http.static.endpoint"], app=StaticFiles(directory=Config("nautica")["http.static.directory"]))
+                Mount(Config("nautica")["http.static.endpoint"], app=StaticFiles(directory=getRoot(Config("nautica")["http.static.directory"])))
             )
             Logger.ok("Enabled static directory")
         
