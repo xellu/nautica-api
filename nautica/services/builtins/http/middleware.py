@@ -79,7 +79,7 @@ class Middleware:
             Logger.trace(e)
             raise ErrorReply(INTERNAL_SERVER_ERROR, "Failed to process your request", details={"exception": str(e)})
 
-    def log_response(ctx: RequestContext, status_code: int = None):
+    def log_response(self, ctx: RequestContext, status_code: int = None):
         status = status_code or ctx.response.status_code
         
         log_msg = f"{ctx.clientIp}: {ctx.request.method.upper()} -> {ctx.url.path} ({status} {getMessage(status)})"
