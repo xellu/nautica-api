@@ -22,7 +22,7 @@ class Middleware:
     @staticmethod
     def handleReply(reply: Reply, status_code: int = 200) -> JSONResponse:
         r = JSONResponse(
-            content = list(reply.array) if reply.array else reply.json,
+            content = list(reply.array) if reply.array or reply.is_list else reply.json,
             status_code = status_code
         )
         #set headers
@@ -58,7 +58,7 @@ class Middleware:
             # return JSONResponse(content=result, status_code=status_code)
             return Middleware.handleReply(Reply(**result), status_code)
         if isinstance(result, list):
-            return Middleware.handleReply(Reply(*result), status_code)
+            return Middleware.handleReply(Reply(*result).IsList(), status_code)
         
         #Other datatypes as plaintext
         return PlainTextResponse(str(result), status_code=status_code)
