@@ -12,29 +12,33 @@ from ..models.Package import PackageRelease
 from ..services import Registry
 from ..ext.PackageUtils import downloadPackage, downloadPackageFromString, removePackage
 
-def installPlugin(package: str | PackageRelease):
+def installPlugin(package: str | PackageRelease, trace = False):
     try:
         p = downloadPackageFromString(package) if isinstance(package, str) else downloadPackage(package)
     except Exception as e:
-        # Logger.trace(e)
+        if trace: Logger.trace(e)
         Logger.critical(f"Package failed to download: {e}")
     else:
         Logger.ok(f"Installed {p.name}, v{p.version}")
 
 @cli.command(aliases=["i"])
 @click.argument("packages", nargs=-1, required=False)
-def install(packages: list | None = None):
+@click.option("--trace", "-t", is_flag=True)
+def install(packages: list | None = None, trace: bool = False):
     #install specified packages-----------
     for package in packages or []:
-        installPlugin(package)
+        installPlugin(package, trace)
     
     if packages:
         try:
             Registry.importAll()
             Registry.onInstall()
         except Exception as e:
-            Logger.trace(e)
-            Logger.critical(f"Packages failed to install: {e}")
+            if trace: Logger.trace(e)
+            else:
+                Logger.critical(f"Packages failed to install: {e}")
+                Logger.info("For more details run with --trace flag")
+            return
         return
     
     #------------------------------------
@@ -72,11 +76,16 @@ def install(packages: list | None = None):
     
 @cli.command()
 @click.argument("package", type=str)
-def uninstall(package: str):
+@click.option("--trace", "-t", is_flag=True)
+def uninstall(package: str, trace: bool = False):
     try:
         removePackage(package)
     except Exception as e:
-        Logger.trace(e)
+        if trace:
+            Logger.trace(e)
+            return
+        Logger.error(f"Failed to remove package: {e}")
+        Logger.info("For more details run with --trace flag")
         return
     
     Logger.ok("Package removed")

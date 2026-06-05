@@ -5,8 +5,8 @@ import requests
 from platformdirs import user_data_dir
 from ..manager import Logger
 from .StatusCodes import getMessage
+from .Static import DEFAULT_REPO
 
-DEFAULT_REPO = "http://localhost:8100/api/v1"
 REGISTRIES = os.path.join(user_data_dir("nautica", ensure_exists=True), "registries.json")
 AUTH_PATH = os.path.join(user_data_dir("nautica", ensure_exists=True), ".auth")
 

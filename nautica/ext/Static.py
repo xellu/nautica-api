@@ -4,7 +4,7 @@ RELEASE = "3.1.0"
 EDITION = "Standard Edition"
 
 log_file = f"nautica_{time.strftime('%d_%m_%y__%H_%M_%S', time.localtime())}.log"
-
+DEFAULT_REPO = "http://napm.xellu.xyz/api/v1"
 
 N3LogoSmall = """█████      ████   ████████████ 
 ████████   ████  ████      ████

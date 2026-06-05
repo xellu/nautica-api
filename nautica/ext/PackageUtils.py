@@ -73,7 +73,7 @@ def downloadPackage(p: PackageRelease) -> PackageRelease:
 def removePackage(package: str) -> bool:
     path = getRoot("plugins", package)
     if not (os.path.exists(path) or os.path.isdir(path)):
-        return False
+        raise FileNotFoundError("Package not installed")
     
     ok, _, err = rmDir(path)
     if not ok: raise err
