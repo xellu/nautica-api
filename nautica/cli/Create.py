@@ -41,5 +41,5 @@ def _create(name):
     Logger.ok("Created project tree")
 
     Logger.info("Installing services...")
-    Registry.ImportAll()
+    Registry.importAll()
     Registry.onInstall()

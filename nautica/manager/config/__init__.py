@@ -8,7 +8,7 @@ from ...ext.Path import getRoot
 
 ROOT_CONFIGS = {
     "nautica": "config.n3",
-    "lock": "package-lock",
+    "lock": "package-lock.n3",
 }
 OPTIONAL_CONFIGS = {
     "projectdev": "project.n3"

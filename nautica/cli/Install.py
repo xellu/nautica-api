@@ -4,14 +4,13 @@ import os
 import click
 
 from ..ext.Path import getRoot
-from ..ext.Util import importModule
 
 from ..manager import Logger, Config, ConfigBuilder
 from ..manager.config import ROOT_CONFIGS, SubConfig
 from ..models.Package import PackageRelease
 
 from ..services import Registry
-from ..ext.PackageUtils import downloadPackage, downloadPackageFromString
+from ..ext.PackageUtils import downloadPackage, downloadPackageFromString, removePackage
 
 def installPlugin(package: str | PackageRelease):
     try:
@@ -31,7 +30,7 @@ def install(packages: list | None = None):
     
     if packages:
         try:
-            Registry.ImportAll()
+            Registry.importAll()
             Registry.onInstall()
         except Exception as e:
             Logger.trace(e)
@@ -68,5 +67,16 @@ def install(packages: list | None = None):
     #install services
     Logger.info("Installing services...")
     
-    Registry.ImportAll()
+    Registry.importAll()
     Registry.onInstall()
+    
+@cli.command()
+@click.argument("package", type=str)
+def uninstall(package: str):
+    try:
+        removePackage(package)
+    except Exception as e:
+        Logger.trace(e)
+        return
+    
+    Logger.ok("Package removed")

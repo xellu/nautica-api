@@ -46,7 +46,7 @@ class ServiceRegistryManager:
     def __getitem__(self, serviceName) -> Service | None:
         return self.get(serviceName)
     
-    def ImportAll(self):
+    def importAll(self):
         #import builtin services
         from .builtins.__init__ import System
         from .builtins import http, websocket, shell
@@ -69,6 +69,9 @@ class ServiceRegistryManager:
             imported += 1
                     
         if imported > 0: Logger.info(f"Imported {imported} plugins")
+    
+    def ImportAll(self):
+        self.ImportAll()
     
     def _prioritize(self, queue: list) -> list:
         return sorted(queue, key=lambda s: 0 if s._getName() == "System" else 1)

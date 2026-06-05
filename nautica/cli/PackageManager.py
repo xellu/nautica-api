@@ -97,7 +97,7 @@ def envinstall():
     #install
     
     setRoot(".testenv")
-    Registry.ImportAll()
+    Registry.importAll()
     Registry.onInstall()
     
     Logger.table() \

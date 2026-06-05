@@ -70,6 +70,15 @@ def downloadPackage(p: PackageRelease) -> PackageRelease:
     
     return p
 
+def removePackage(package: str) -> bool:
+    path = getRoot("plugins", package)
+    if not (os.path.exists(path) or os.path.isdir(path)):
+        return False
+    
+    ok, _, err = rmDir(path)
+    if not ok: raise err
+    
+    return True
 
 def isPipPackageInstalled(dep: str) -> bool:
     try:

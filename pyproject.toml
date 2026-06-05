@@ -24,6 +24,7 @@ dependencies = [
     "textual",
     "pathspec",
     "requests",
+    "packaging",
 ]
 
 [tool.setuptools.packages.find]

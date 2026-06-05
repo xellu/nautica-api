@@ -28,5 +28,5 @@ def _run(path):
             return
         
         
-    Services.ImportAll()
+    Services.importAll()
     Services.onStart()
