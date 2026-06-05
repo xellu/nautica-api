@@ -138,7 +138,7 @@ class Shell(Service):
                 if self.should_exit: break
                 
                 if systemd:
-                    asyncio.sleep(0.25) #prevent from exiting prematurely
+                    await asyncio.sleep(0.25) #prevent from exiting prematurely
                     continue 
                         
                 await self.handle_input()        
