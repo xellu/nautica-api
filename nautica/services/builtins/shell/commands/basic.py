@@ -38,7 +38,7 @@ def stop(force: bool = False):
     "help", "Shows all available commands",
 )
 def _help(command: str | None = None):
-    s: dict[str, ShellCommand] = Services.Get("Shell")
+    s: dict[str, ShellCommand] = Services.get("Shell")
     if not s:
         Logger.error("Unable to get shell service, commands unavailable")
         return
@@ -57,7 +57,7 @@ def _help(command: str | None = None):
 def manual(command: str = None):
     from .. import Shell
     
-    s: Shell = Services.Get("Shell")
+    s: Shell = Services.get("Shell")
     if not s:
         Logger.error("Unable to get shell service, commands unavailable")
         return

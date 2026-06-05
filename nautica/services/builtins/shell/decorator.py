@@ -7,7 +7,7 @@ def RegisterCommand(
     args: CommandRequirements | None = None
 ):
     def decorator(func):
-        Services.Get("Shell").handlers[name] = ShellCommand(
+        Services.get("Shell").handlers[name] = ShellCommand(
             name,
             func,
             

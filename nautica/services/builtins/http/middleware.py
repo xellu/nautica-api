@@ -103,7 +103,7 @@ class Middleware:
                 
             ctx = RequestContext(request)
             
-            route: InFlightRouteData = Services.Get("HTTPRouter").getByFunc(wrapper)
+            route: InFlightRouteData = Services.get("HTTPRouter").getByFunc(wrapper)
             if not route: Logger.error(f"Route data for function '{wrapper.__name__}' was not found")
             else:
                 #process requirements

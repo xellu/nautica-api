@@ -14,7 +14,7 @@ from ..ext.Static import PackageServiceExample, GitIgnore
 from ..ext.StatusCodes import getMessage
 from ..ext.Path import setRoot, getRoot
 
-from .PackageManagerAuth import prompt_login, login, get_all_regs, set_reg_url, get_reg_url
+from ..ext.PackageManager import prompt_login, login, get_all_regs, set_reg_url, get_reg_url
 
 
 def is_valid_name(name: str):
@@ -195,7 +195,8 @@ def publish():
     
     with ZipFile("package.zip", "w") as z:
         for f in files:
-            z.write(f)
+            arcName = os.path.normpath(f).lstrip(os.sep + ".")
+            z.write(f, arcname=arcName)
             
     Logger.ok("Created package archive")
 

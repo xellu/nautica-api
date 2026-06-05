@@ -34,13 +34,17 @@ class ServiceRegistryManager:
         if serv in self.instances:
             self.instances.remove(serv)
             
-    def Get(self, serviceName) -> Service | None:
+    def get(self, serviceName) -> Service | None:
         for s in self.instances:
             if s._getName() == serviceName:
                 return s
+            
+    
+    def Get(self, serviceName) -> Service | None:
+        return self.get(serviceName)
     
     def __getitem__(self, serviceName) -> Service | None:
-        return self.Get(serviceName)
+        return self.get(serviceName)
     
     def ImportAll(self):
         #import builtin services
@@ -112,7 +116,7 @@ class ServiceRegistryManager:
                 continue #skip disabled services
             
             for dep in serv._depends_on: #crash on dependency error
-                if not self.Get(dep):
+                if not self.get(dep):
                     Logger.critical(f"Unable to load service, dependency '{dep}' not found")
                     
                     self.onClose("Failed to initialize") #crash

@@ -21,7 +21,7 @@ class CommandInput(Container):
         self._last_value = ""
     
     def get_suggestions(self, value: str) -> list[str]:
-        s = Services.Get("Shell")
+        s = Services.get("Shell")
         if not s: return []
         
         parts = value.split(" ")

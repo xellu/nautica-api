@@ -3,6 +3,7 @@ dump.txt
 benchmark.py
 test.py
 draft.md
+package-lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

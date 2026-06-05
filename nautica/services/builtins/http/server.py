@@ -35,7 +35,7 @@ class HTTPServer(Service):
     def onStart(self, registry):
         super().onStart(registry)
 
-        self.router = registry.Get("HTTPRouter")
+        self.router = registry.get("HTTPRouter")
         self.registry = registry
 
         self.app = Starlette(

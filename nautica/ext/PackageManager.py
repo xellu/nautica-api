@@ -4,7 +4,7 @@ import getpass
 import requests
 from platformdirs import user_data_dir
 from ..manager import Logger
-from ..ext.StatusCodes import getMessage
+from .StatusCodes import getMessage
 
 DEFAULT_REPO = "http://localhost:8100/api/v1"
 REGISTRIES = os.path.join(user_data_dir("nautica", ensure_exists=True), "registries.json")
