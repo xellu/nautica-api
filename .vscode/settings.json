@@ -1,7 +1,13 @@
 {
     "cSpell.words": [
+        "envclean",
+        "envinstall",
+        "envmake",
         "napi",
+        "projectdev",
+        "regs",
         "reqs",
-        "serv"
+        "serv",
+        "Unreg"
     ]
 }

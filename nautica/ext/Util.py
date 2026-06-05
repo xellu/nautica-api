@@ -6,6 +6,12 @@ import os
 import re
 import sys
 import importlib.util
+from pathspec import PathSpec
+from .Static import GitIgnore
+from .Path import getRoot
+
+GitIgnoreSpec = PathSpec.from_lines("gitwildmatch", GitIgnore.splitlines() + [".git/"])
+
 
 async def maybeAwait(result):
     if inspect.isawaitable(result):
@@ -45,14 +51,33 @@ def walkPath(dir_path: str, include_dirs=False):
 
     return tree
 
-def importModule(path):
-    path = os.path.abspath(path)
-    name = os.path.splitext(os.path.basename(path))[0]
+def filterPathsGitIgnore(paths: list[str]) -> list[str]:
+    new = []
+    for p in paths:
+        if not GitIgnoreSpec.match_file(p):
+            new.append(p)
+            
+    return new
 
-    cwd = os.getcwd()
+def isGitIgnored(path: str) -> bool:
+    return GitIgnoreSpec.match_file(path)
+
+def getGitIgnoredPaths(paths: list[str]) -> list[str]:
+    new = []
+    for p in paths:
+        if GitIgnoreSpec.match_file(p):
+            new.append(p)
+            
+    return new
+
+def importModule(path, name: str | None = None):
+    path = os.path.abspath(path)
+    name = name or os.path.splitext(os.path.basename(path))[0]
+
+    root = getRoot()  # get project root
     added = False
-    if cwd not in sys.path:
-        sys.path.insert(0, cwd)
+    if root not in sys.path:
+        sys.path.insert(0, root)
         added = True
 
     try:
@@ -61,8 +86,8 @@ def importModule(path):
         spec.loader.exec_module(module)
         return module
     finally:
-        if added and cwd in sys.path:
-            sys.path.remove(cwd)
+        if added and root in sys.path:
+            sys.path.remove(root)
 
 def getExt(fileName):
     if len(fileName.split("."))  <= 1: return ""

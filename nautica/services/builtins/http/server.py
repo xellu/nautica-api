@@ -4,6 +4,7 @@ from ....manager import Config, Logger
 from .middleware import Middleware
 from ....models.Http import ErrorReply
 from ....ext.StatusCodes import NOT_FOUND
+from ....ext.Path import getRoot
 
 from starlette.applications import Starlette
 from starlette.staticfiles import StaticFiles
@@ -34,7 +35,7 @@ class HTTPServer(Service):
     def onStart(self, registry):
         super().onStart(registry)
 
-        self.router = registry.Get("HTTPRouter")
+        self.router = registry.get("HTTPRouter")
         self.registry = registry
 
         self.app = Starlette(
@@ -53,7 +54,8 @@ class HTTPServer(Service):
                     allow_origins = Config("nautica")["http.cors.origins"],
                     allow_methods = Config("nautica")["http.cors.methods"],
                     allow_headers = Config("nautica")["http.cors.headers"],
-                    allow_credentials = Config("nautica")["http.cors.credentials"], 
+                    allow_credentials = Config("nautica")["http.cors.credentials"],
+                    expose_headers = Config("nautica")["http.cors.exposeHeaders"]
             )
         
         self.thread = t = threading.Thread(target=self._run)
@@ -87,7 +89,7 @@ class HTTPServer(Service):
         #static routes
         if Config("nautica")["http.static.enabled"]:
             out.append(
-                Mount(Config("nautica")["http.static.endpoint"], app=StaticFiles(directory=Config("nautica")["http.static.directory"]))
+                Mount(Config("nautica")["http.static.endpoint"], app=StaticFiles(directory=getRoot(Config("nautica")["http.static.directory"])))
             )
             Logger.ok("Enabled static directory")
         

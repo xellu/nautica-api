@@ -172,7 +172,7 @@ class HomePage(Container):
             return
 
         if event.value:
-            s = Services.Get("Shell")
+            s = Services.get("Shell")
             if not s:
                 Logger.error("Shell service not found")
                 return

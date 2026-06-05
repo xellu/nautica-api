@@ -26,6 +26,7 @@ class HTTPConfig(Service):
                 .add("http.cors.origins", ["*"], comment="List of allowed origins (Access-Control-Allow-Origin), empty list blocks all origins")
                 .add("http.cors.methods", ["*"], comment="List of allowed methods (Access-Control-Request-Method)")
                 .add("http.cors.headers", ["*"], comment="List of allowed headers (Access-Control-Request-Headers)")
+                .add("http.cors.exposeHeaders", [], comment="List of exposed headers")
                 .add("http.cors.credentials", False, comment="Allow cookies and auth headers (Authorization) to be sent with cross-origin requests")
                 .build()
         )

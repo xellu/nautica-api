@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nautica"
-version = "3.0.2"
+version = "3.1.0"
 description = "A service management framework"
 license = {text = "MIT"}
 authors = [
@@ -21,7 +21,10 @@ dependencies = [
     "tomlkit",
     "click",
     "psutil",
-    "textual"
+    "textual",
+    "pathspec",
+    "requests",
+    "packaging",
 ]
 
 [tool.setuptools.packages.find]

@@ -2,6 +2,7 @@ from ..models.Service import Service
 from ..manager import Logger, Config
 
 from ..ext.Util import importModule
+from ..ext.Path import getRoot
 
 import os
 import time
@@ -33,31 +34,44 @@ class ServiceRegistryManager:
         if serv in self.instances:
             self.instances.remove(serv)
             
-    def Get(self, serviceName) -> Service | None:
+    def get(self, serviceName) -> Service | None:
         for s in self.instances:
             if s._getName() == serviceName:
                 return s
+            
+    
+    def Get(self, serviceName) -> Service | None:
+        return self.get(serviceName)
     
     def __getitem__(self, serviceName) -> Service | None:
-        return self.Get(serviceName)
+        return self.get(serviceName)
     
-    def ImportAll(self):
+    def importAll(self):
         #import builtin services
         from .builtins.__init__ import System
         from .builtins import http, websocket, shell
         
         # Logger.info("Imported built-in services")
         
-        os.makedirs("plugins", exist_ok=True)
-        
+        os.makedirs(getRoot("plugins"), exist_ok=True)
+
         imported = 0
-        for f in os.listdir("plugins"): #not using walkPath on purpose
-            if not f.endswith(".py") or os.path.isdir(f): continue
-            
-            importModule(os.path.join("plugins", f))
+        for f in os.listdir(getRoot("plugins")):
+            full_path = getRoot("plugins", f)
+            if os.path.isdir(full_path):
+                init = os.path.join(full_path, "__init__.py")
+                if not os.path.exists(init): continue
+                importModule(init, name=f"plugins.{f}")
+            elif f.endswith(".py"):
+                importModule(full_path, name=f"plugins.{os.path.splitext(f)[0]}")
+            else:
+                continue
             imported += 1
-            
+                    
         if imported > 0: Logger.info(f"Imported {imported} plugins")
+    
+    def ImportAll(self):
+        self.ImportAll()
     
     def _prioritize(self, queue: list) -> list:
         return sorted(queue, key=lambda s: 0 if s._getName() == "System" else 1)
@@ -105,7 +119,7 @@ class ServiceRegistryManager:
                 continue #skip disabled services
             
             for dep in serv._depends_on: #crash on dependency error
-                if not self.Get(dep):
+                if not self.get(dep):
                     Logger.critical(f"Unable to load service, dependency '{dep}' not found")
                     
                     self.onClose("Failed to initialize") #crash

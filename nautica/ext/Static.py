@@ -1,10 +1,10 @@
 import time
 
-RELEASE = "3.0.2"
+RELEASE = "3.1.0"
 EDITION = "Standard Edition"
 
 log_file = f"nautica_{time.strftime('%d_%m_%y__%H_%M_%S', time.localtime())}.log"
-
+DEFAULT_REPO = "http://napm.xellu.xyz/api/v1"
 
 N3LogoSmall = """█████      ████   ████████████ 
 ████████   ████  ████      ████
@@ -56,7 +56,9 @@ MANIFEST
 
 # Nautica3
 .logs/
+.testenv/
 config/
+package.zip
 
 # PyInstaller
 *.manifest
@@ -205,9 +207,49 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 """
-                                                          
-ProjectExample = """
-from napi.http import HTTP, Context, Reply, Error, Require, StatusCodes
+
+PackageServiceExample = """from nautica import Service, Logger, Config, ConfigBuilder
+
+class MyService(Service):
+    def __init__(self):
+        super().__init__() # Keep this
+
+    def onInstall(self):
+        # Register service toggle switch:
+        Config.Update("nautica",
+            ConfigBuilder()
+                .add("services.myservice", False, comment="Enable MyService")
+                .build()
+        )
+        
+        # Register service-related configuration
+        Config.New("myservice", # Will create a file called: config/myservice.toml
+            ConfigBuilder()
+                # use .add(...) to add config keys
+                .build() # Creates empty config
+        )
+
+    def isEnabled(self):
+        # Return True to enable the service, False to disable.
+        return Config("nautica")["services.myservice"]
+
+    def onStart(self, registry):
+        # This is called when a service is starting
+        Logger.ok("MyService started")
+
+    def onClose(self, reason):
+        # This is called when a service is stopping
+        Logger.info("MyService stopped")
+
+# Export your service
+Service.Export(MyService)
+
+# Documentation for creating services is available on
+# the GitHub Wiki: https://github.com/xellu/nautica-api/wiki/Service-Registry
+"""
+
+                          
+ProjectExample = """from napi.http import HTTP, Context, Reply, Error, Require, StatusCodes
 
 #An Example Data set
 DATASET = {

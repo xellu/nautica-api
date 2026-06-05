@@ -75,6 +75,15 @@ class SubConfig:
                 if key not in self.data:
                     self.data.add(key, value)
         self.save()
+        
+    def keys(self):
+        return self.data.keys()
+    
+    def values(self):
+        return self.data.values()
+    
+    def items(self):
+        return self.data.items()
 
     def __call__(self, key_path):
         return self.get(key_path)

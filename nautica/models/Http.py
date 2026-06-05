@@ -81,13 +81,13 @@ class InFlightRouteData:
 
 class AttachedFile:
     def __init__(self, upload: UploadFile):
-        self._file = upload
+        self.file = upload
         self.filename = upload.filename
         self.mime = upload.content_type
         self.size = upload.size #updated on read
     
     async def read(self) -> bytes:
-        data = await self._file.read()
+        data = await self.file.read()
         self.size = len(data)
         return data
     
@@ -128,6 +128,7 @@ class Reply:
             "Server": "Nautica3"
         }
         self.cookies = {}
+        self.is_list = False
 
     def SetHeader(self, headers: dict):
         """Merges the given dict into the response headers."""
@@ -137,6 +138,11 @@ class Reply:
     def SetCookie(self, name: str):
         """Returns a Cookie builder for the given cookie name."""
         return Cookie(name, self)
+
+    def IsList(self, value: bool = True):
+        """Tells Middleware to serialize this as a list, if no values are provided"""
+        self.is_list = value
+        return self
 
 class ErrorReply(Exception):
     """Represents an HTTP error response. Can be returned or raised from a handler."""

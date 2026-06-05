@@ -1,6 +1,4 @@
-import os
 import click
-
 
 class AliasedGroup(click.Group):
     def command(self, *args, aliases: list[str] = None, **kwargs):
