@@ -87,6 +87,8 @@ class AttachedFile:
         self.size = upload.size #updated on read
     
     async def read(self) -> bytes:
+        await self.file.file.seek(0)
+
         data = await self.file.read()
         self.size = len(data)
         return data
@@ -95,7 +97,6 @@ class AttachedFile:
         data = await self.read()
         with open(path, "wb") as f:
             f.write(data)
-
 class RequestContext:
     """Wraps a Starlette Request and exposes it to route handlers."""
 

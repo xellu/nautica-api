@@ -53,7 +53,8 @@ class HTTPRouter(Service):
                 )
                 # print(route.getMethod(), route.getPath(), route.getRequirements().getBody())
                 self.routes.append(route)
-                
+               
+            _HTTPRouter.temp = [] 
             imported += 1
         
         Logger.info(f"Processed {imported} files, registered {len(self.routes)} endpoints")

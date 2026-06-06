@@ -21,8 +21,10 @@ class HTTPServer(Service):
     def __init__(self):
         super().__init__()
 
+        from .router import HTTPRouter
+
         self.app = None
-        self.router = None
+        self.router: HTTPRouter = None
         self.thread = None
         self.server = None
         
@@ -46,6 +48,9 @@ class HTTPServer(Service):
                 404: self.handle_404
             }
         )
+        
+        if registry.get("Shell"):
+            self.registerCommands()
         
         #cors middleware
         if Config("nautica")["http.cors.enabled"]:
@@ -105,9 +110,32 @@ class HTTPServer(Service):
             
         return out
         
+    def registerCommands(self):
+        from ..shell.decorator import RegisterCommand
+        
+        @RegisterCommand("lshttp", "Lists all HTTP Endpoints")
+        def list_http_endpoints():
+            for r in self.router.routes:
+                beforeCount = len(r.getBeforeHandlers() or [])
+                afterCount = len(r.getAfterHandlers() or [])
+                
+                Logger.info(f"- [{r.getMethod().upper()}] {r.getPath()} - {'@Before='+str(beforeCount)+', ' if beforeCount else ''}{'@After='+str(afterCount)+', ' if afterCount else ''}func={r.getFunc()}")
+            
+        @RegisterCommand("lsws", "Lists all WebSocket Endpoints")
+        def list_ws_endpoints():
+            if not self.registry["WebSocket"]:
+                Logger.error("Service not enabled")
+                return
+                
+            for r in self.registry["WebSocket"].routes:
+                Logger.info(f"- {r.path}, packets={r.packets.keys()}")
+            
+        
+        
     async def handle_404(self, request: Request, exc: HTTPException):
         return Middleware.constructResponse(
             ErrorReply(NOT_FOUND, details={"exception": str(exc)}).toReply(), NOT_FOUND
         )
+        
     
-Service.Export(HTTPServer, depends_on=["HTTPRouter", "WebSocket"])
+Service.Export(HTTPServer, depends_on=["HTTPRouter", "WebSocket", "Shell"])
