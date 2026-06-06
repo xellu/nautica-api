@@ -89,6 +89,8 @@ def env():
         
 @package.command()
 def envinstall():
+    from .Install import _install
+    
     #project checks
     if ".testenv" not in os.listdir("."):
         Logger.error("No test environment found. Run 'nautica package env' to create one.")
@@ -97,8 +99,7 @@ def envinstall():
     #install
     
     setRoot(".testenv")
-    Registry.importAll()
-    Registry.onInstall()
+    _install(trace=True)
     
     Logger.table() \
         .labels(["Test Environment Installed! To run it:"]) \
