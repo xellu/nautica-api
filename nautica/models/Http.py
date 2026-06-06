@@ -87,7 +87,7 @@ class AttachedFile:
         self.size = upload.size #updated on read
     
     async def read(self) -> bytes:
-        await self.file.file.seek(0)
+        await self.file.seek(0)
 
         data = await self.file.read()
         self.size = len(data)
