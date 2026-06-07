@@ -1,5 +1,6 @@
 from ....models.Http import InFlightRouteData, RouteRequirements, AttachedFile
 from ....models.Requirements import RequirementResponse, Requirement
+from ....manager import Logger
 from starlette.requests import Request
 
 class ErrorDetails:
@@ -125,7 +126,8 @@ class RequirementParser:
                 else:
                     fields[key] = value
             return files, fields
-        except:
+        except Exception as e:
+            Logger.trace(e)
             return {}, {}
 
     def _validateFiles(self, schema: dict, files: dict, add_error):

@@ -25,6 +25,9 @@ def installPlugin(package: str | PackageRelease, trace = False):
 @click.argument("packages", nargs=-1, required=False)
 @click.option("--trace", "-t", is_flag=True)
 def install(packages: list | None = None, trace: bool = False):
+    _install(packages, trace)
+
+def _install(packages: list | None = None, trace: bool = False):
     #install specified packages-----------
     for package in packages or []:
         installPlugin(package, trace)
