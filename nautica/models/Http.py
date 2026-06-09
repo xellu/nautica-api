@@ -31,7 +31,7 @@ class RouteRequirements:
             nested = []
             for k, _type in v.items():
                 nested.append(f"{k}={RouteRequirements.typeToString(_type)}")
-            return f"nested({','.join(nested)})"
+            return f"nested({', '.join(nested)})"
         
         return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)
 
@@ -150,6 +150,10 @@ class Reply:
         """Tells Middleware to serialize this as a list, if no values are provided"""
         self.is_list = value
         return self
+    
+    @staticmethod
+    def list(*array):
+        return Reply(*array).IsList()
 
 class ErrorReply(Exception):
     """Represents an HTTP error response. Can be returned or raised from a handler."""
