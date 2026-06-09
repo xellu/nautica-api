@@ -33,6 +33,9 @@ class System(Service):
         if not Config.Exists("lock"):
             Config.New("lock", ConfigBuilder().build())
         
+    def isEnabled(self):
+        return True
+        
     def onStart(self, registry):
         threading.Thread(
             target = self.runScheduler,

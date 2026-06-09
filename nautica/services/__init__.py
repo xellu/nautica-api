@@ -96,6 +96,7 @@ class ServiceRegistryManager:
     def onInstall(self):
         for serv in self._prioritize(self.startQueue):
             try:
+                serv.isEnabled()
                 serv.onInstall()
             except Exception as e:
                 Logger.trace(e)

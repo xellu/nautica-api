@@ -1,6 +1,6 @@
 from ..ext.Util import randomHex
 from ..ext.Path import getRoot
-from ..manager import Logger
+from ..manager import Config, ConfigBuilder
 
 import os
 
@@ -45,8 +45,14 @@ class Service:
         pass
     
     def isEnabled(self):
-        """Return True of False to indicate if the service is enabled"""
-        return True
+        """Return True of False to indicate if the service is enabled; use super().isEnabled() to keep automatic config registration."""
+        
+        key = f"services.{self._getName().lower()}"
+        Config.Update("nautica",
+            ConfigBuilder().add(key, True, comment=f"Enable {self._getName()}").build()
+        )
+        
+        return Config("nautica")[key]
 
     # ON SETUP-----------
     
