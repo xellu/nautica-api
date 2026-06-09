@@ -27,6 +27,12 @@ class RouteRequirements:
 
     @staticmethod
     def typeToString(v):
+        if isinstance(v, dict):
+            nested = []
+            for k, _type in v.items():
+                nested.append(f"{k}={RouteRequirements.typeToString(_type)}")
+            return f"nested({','.join(nested)})"
+        
         return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)
 
     def toJson(self):

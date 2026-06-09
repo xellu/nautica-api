@@ -51,7 +51,7 @@ class RouteManager:
         ):
         for field in [body or {}, headers or {}, cookies or {}, query or {}]:
             for v in field.values():
-                if not (isinstance(v, type) or isinstance(v, Requirements.Requirement)): raise TypeError(f"Context builder only accepts types and Requirements")
+                if not (isinstance(v, type) or isinstance(v, Requirements.Requirement) or isinstance(v, dict)): raise TypeError(f"Context builder only accepts types, dicts and Requirements")
         
         for v in (files or {}).values():
             if not isinstance(v, Requirements.File): raise TypeError(f"File dict only accepts Requirements.File, provided '{type(v).__name__}'")

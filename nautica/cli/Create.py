@@ -7,7 +7,7 @@ from ..ext.Static import banner, GitIgnore, ProjectExample
 from ..ext.Util import walkPath
 from ..ext.Path import setRoot, getRoot
 
-from ..manager import Logger, LogLevel
+from ..manager import Logger, LogLevel, Config
 
 from ..services import Registry
 
@@ -44,3 +44,6 @@ def _create(name, demo: bool = False):
     Logger.info("Installing services...")
     Registry.importAll()
     Registry.onInstall()
+    
+    if demo:
+        Config("nautica")["services.http"] = True

@@ -84,7 +84,7 @@ class RequirementParser:
             missingData=details.toDict() if not details.isOk else None
         ) #wow
 
-    def _validate(self, schema: dict, source, add_error, coerce: bool = False):
+    def _validate(self, schema: dict, source, add_error, coerce: bool = False, prefix: str = ""):
         for k, _type in schema.items():
             if k not in source:
                 add_error(f"Key '{k}' is required but was not provided, schema={RouteRequirements.typeToString(_type)}")
@@ -92,9 +92,21 @@ class RequirementParser:
 
             value = source[k]
 
+            #handle requirements
             if isinstance(_type, Requirement):
                 if not _type.isValid(value):
-                    add_error(f"Key '{k}' does not match expression {str(_type)}")
+                    add_error(f"Key '{prefix}{k}' does not match expression {str(_type)}")
+            
+        
+            #nested json
+            elif isinstance(_type, dict):
+                if not isinstance(source.get(k), dict):
+                    add_error(f"Key '{prefix}{k}' does not match expression {RouteRequirements.typeToString(_type)}")
+                    continue
+                    
+                self._validate(schema[k], source.get(k), add_error, coerce, prefix=f"{k}.")
+                
+            #data types
             elif coerce:
                 try:
                     if _type is bool:
@@ -103,7 +115,7 @@ class RequirementParser:
                     else:
                         _type(value)
                 except (ValueError, TypeError):
-                    add_error(f"Key '{k}' has to match '{RouteRequirements.typeToString(_type)}', got unconvertible value '{value}'")
+                    add_error(f"Key '{prefix}{k}' has to match '{RouteRequirements.typeToString(_type)}', got unconvertible value '{value}'")
                 else:
                     source[k] = _type(value)
             else:
