@@ -6,7 +6,7 @@ import threading
 
 class System(Service):
     def __init__(self):
-        pass
+        super().__init__()
     
     def onInstall(self):
         #config.n3

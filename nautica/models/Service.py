@@ -10,15 +10,17 @@ class Service:
     def __init__(self):
         self._instanceId = f"NSI_{randomHex(16)}"
         self._isInitialized = False
-        self._depends_on = []
+        
+        self._depends_on: list[str] = []
+        self._depends_on_ctx: list[ServiceContext] = []
 
     def _register(self):
         from ..services import Registry
-        Registry.Create(self)
+        Registry.create(self)
 
     def _unregister(self):
         from ..services import Registry
-        Registry.Cancel(self)
+        Registry.cancel(self)
 
     def _getName(self) -> str:
         return type(self).__name__
@@ -46,6 +48,14 @@ class Service:
         """Return True of False to indicate if the service is enabled"""
         return True
 
+    # ON SETUP-----------
+    
+    def onSetup(self, registry):
+        """Called when the service is being initialized. Override to open database connections, register middlewares."""
+        pass
+
+    # ON START-----------
+
     def _onStart(self, registry):
         self.onStart(registry)
         self._isInitialized = True
@@ -53,6 +63,8 @@ class Service:
     def onStart(self, registry):
         """Called when the service is started by the registry. Override to add startup logic."""
         pass
+
+    # ON CLOSE-----------
 
     def _onClose(self, reason: str | None = None, _avoidUnreg=False):
         if not _avoidUnreg:
@@ -62,3 +74,39 @@ class Service:
     def onClose(self, reason: str | None):
         """Called when the service is stopped. Override to add teardown logic."""
         pass
+
+class ServiceContext:
+    def __init__(self, name: str, optional: bool, after: bool):
+        self.name = name
+        self.optional = optional
+        self.after = after
+    
+    def __str__(self):
+        return f"ServiceContext({self.name=}, {self.optional=}, {self.after=})"
+    
+class ServiceHelper:
+    def __init__(self, service: str):
+        self.service = service
+        
+    def getContext(self) -> ServiceContext:
+        s = self.service
+        
+        name = ""
+        after = False
+        
+        #?
+        optional = s.endswith("?")
+        s = s.replace("?", "")
+        
+        #:after
+        parts = s.split(":")
+        if len(parts) >= 2:
+            if parts[1] == "after":
+                after = True
+                
+        name = parts[0]
+        
+        # print(parts, name)
+        return ServiceContext(
+            name, optional, after
+        )

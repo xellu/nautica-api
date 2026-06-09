@@ -138,4 +138,4 @@ class HTTPServer(Service):
         )
         
     
-Service.Export(HTTPServer, depends_on=["HTTPRouter", "WebSocket", "Shell"])
+Service.Export(HTTPServer, depends_on=["HTTPRouter", "WebSocket?", "Shell"])
