@@ -6,7 +6,7 @@ from ..ext.Path import getRoot
 
 import os
 import time
-from typing import Type, TypeVar, Union, overload, Any
+from typing import Type, TypeVar, overload, Any
 
 T = TypeVar('T', bound='Service')
 
@@ -47,19 +47,16 @@ class ServiceRegistryManager:
         pass
     
     @overload
-    def get(self, target: str) -> Any | None:
+    def get(self, target: str) -> Service | None:
         pass
 
-    def get(self, target: Union[Type['Service'], str]) -> Any | None:
-        """Handles both Class-based and String-based service lookups."""
-        
+    #this is kinda how java works
+    def get(self, target: Service | str) -> Any | None:
         if isinstance(target, str):
-            # Fallback to your original string lookup name matching
             for s in self.instances:
                 if s._getName() == target:
                     return s
         else:
-            # Handle class-based lookup
             for s in self.instances:
                 if isinstance(s, target):
                     return s
