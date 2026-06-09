@@ -82,6 +82,9 @@ class Middleware:
     def log_response(self, ctx: RequestContext, status_code: int = None):
         status = status_code or ctx.response.status_code
         
+        if not Config("nautica")["http.logRequests"] and (not isClientError(status) or not isServerError(status)):
+            return
+        
         log_msg = f"{ctx.clientIp}: {ctx.request.method.upper()} -> {ctx.url.path} ({status} {getMessage(status)})"
         if isSuccess(status): Logger.ok(log_msg)
         elif isClientError(status): Logger.warn(log_msg)

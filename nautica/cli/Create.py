@@ -13,8 +13,9 @@ from ..services import Registry
 
 @cli.command()
 @click.argument("name", type=str)
-def create(name):
-    _create(name)
+@click.option("--demo", "-d", is_flag=True)
+def create(name, demo: bool = False):
+    _create(name, demo)
     
     Logger.table() \
         .labels(["Project Created! Get Started by running:"]) \
@@ -22,7 +23,7 @@ def create(name):
         .row([""]).row(["Thank you for using Nautica3!"]) \
         .display(LogLevel.INFO)
     
-def _create(name):
+def _create(name, demo: bool = False):
     # print(f"{Fore.BLUE}{banner()}{Fore.RESET}")
     if os.path.exists(name) and len(walkPath(name, include_dirs=True)) > 0:
         Logger.error(f"A Non-empty directory with this name already exists")
@@ -36,7 +37,7 @@ def _create(name):
         os.makedirs(getRoot(f), exist_ok=True)
 
     with open(getRoot(".gitignore"), "w") as f: f.write(GitIgnore)
-    with open(getRoot("src/http/+root.py"), "w") as f: f.write(ProjectExample)
+    with open(getRoot("src/http/+root.py"), "w") as f: f.write(ProjectExample if demo else "")
 
     Logger.ok("Created project tree")
 

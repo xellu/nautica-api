@@ -1,7 +1,6 @@
 from ...models.Service import Service
 from ...manager import Config, ConfigBuilder, Scheduler
 
-import os
 import asyncio
 import threading
 

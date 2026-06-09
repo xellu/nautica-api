@@ -44,8 +44,6 @@ class LogManager:
         self.fatal = self.critical
             
     def _caller_name(self) -> str:
-        # start = time.time()
-        
         this_dir = os.path.dirname(os.path.abspath(__file__))
         frame = sys._getframe(1)
         name = "N3"
@@ -55,8 +53,7 @@ class LogManager:
                 name = frame.f_globals.get("__name__", "unknown")
                 break
             frame = frame.f_back
-        
-        # print(f"Took: {(time.time()-start)*1000:.1f}ms")
+              
         return name
 
     def _shorten_name(self, name) -> str:
