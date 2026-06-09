@@ -2,13 +2,14 @@
 from nautica.manager import Logger
 
 from nautica.services.builtins.http.middleware import Middleware
-from nautica.models.Http import RouteRequirements, RequestContext as Context, Reply, ErrorReply as Error
+from nautica.models.Http import RouteRequirements, RequestContext, Reply, ErrorReply, ReplyModel
 from nautica.models import Requirements
 from nautica.ext import StatusCodes
 
 from starlette.responses import JSONResponse, PlainTextResponse, FileResponse, HTMLResponse, RedirectResponse, StreamingResponse
 
-Require = Requirements
+Context = RequestContext
+Error = ErrorReply
 
 class RouteManager:
     def __init__(self):
@@ -97,15 +98,27 @@ class RouteManager:
     
         return decorator
     
-    def ReplyModel(self, model: type | dict | Requirements.Requirement):
+    def Responses(self, *models: ReplyModel, strict: bool = False):
         """
-        Declare the expected response schema for a route.
+        Declare one or more possible response schemas for a route.
 
-        Used for documentation and validation purposes. `model` can be
-        a type, a dict schema, or a `Requirement` expression.
+        Used for documentation, filtering and validation purposes.
+        Each model represents a possible response.
+        Pass multiple to describe routes that return different shapes depending on outcome.
+
+        `int` values are treated as HTTP error status codes.
+
+        Example:
+
+            @HTTP.GET()
+            @HTTP.ReplyModel({"username": str, "age": int}, 404, 403)
+            async def get_user(ctx: Context): ...
         """
         def decorator(func):
-            func._replyModel = model
+            func._replyModel = models
+            if strict:
+                func._enforceModels = True
+            
             return func
         
         return decorator
@@ -117,7 +130,7 @@ class RouteManager:
         `fn` will be called before the decorated handler on each request.
         Multiple hooks can be chained by applying `@Before` multiple times.
 
-        Example::
+        Example:
 
             @HTTP.GET()
             @HTTP.Before(auth_check)

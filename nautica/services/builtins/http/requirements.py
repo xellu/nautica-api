@@ -84,7 +84,8 @@ class RequirementParser:
             missingData=details.toDict() if not details.isOk else None
         ) #wow
 
-    def _validate(self, schema: dict, source, add_error, coerce: bool = False, prefix: str = ""):
+    @staticmethod
+    def _validate(schema: dict, source, add_error, coerce: bool = False, prefix: str = ""):
         for k, _type in schema.items():
             if k not in source:
                 add_error(f"Key '{k}' is required but was not provided, schema={RouteRequirements.typeToString(_type)}")
@@ -104,7 +105,7 @@ class RequirementParser:
                     add_error(f"Key '{prefix}{k}' does not match expression {RouteRequirements.typeToString(_type)}")
                     continue
                     
-                self._validate(schema[k], source.get(k), add_error, coerce, prefix=f"{k}.")
+                RequirementParser._validate(schema[k], source.get(k), add_error, coerce, prefix=f"{k}.")
                 
             #data types
             elif coerce:
