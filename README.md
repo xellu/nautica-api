@@ -1,28 +1,35 @@
 # Nautica V3
 
-![PyPI Version](https://img.shields.io/pypi/v/nautica)
-![Python](https://img.shields.io/badge/python-3.11+-blue)
-![License](https://img.shields.io/github/license/xellu/nautica-api)
-![PyPI Downloads](https://img.shields.io/pypi/dm/nautica)
+![PyPI Version](https://img.shields.io/pypi/v/nautica?cacheSeconds=3600)
+![Python](https://img.shields.io/pypi/pyversions/nautica?cacheSeconds=3600)
+![License](https://img.shields.io/pypi/l/nautica?cacheSeconds=3600)
+![PyPI Downloads](https://img.shields.io/pypi/dm/nautica?cacheSeconds=3600)
 
-Nautica V3 _(or N3)_ is a backend platform for Python. It gives you a managed runtime environment with a service registry, lifecycle system, CLI, and built-in 
-tools, saving you time from putting your app together and giving you more time to build it.
+Nautica3 is a backend platform for Python. It gives you a managed runtime environment with a service registry, lifecycle system, CLI, and built-in tools, saving you time from putting your app together and giving you more time to build it.
 
-<img width="1589" height="690" alt="hjkl rsdfgkhjlfgjkl" src="https://github.com/user-attachments/assets/e32e112b-5e62-4e0e-aeae-e6fdd0a36d90" />
 
-## What's Included
-- **Service Registry** with dependency resolver
-- **Lifecycle hooks** for install, start and shutdown
-- TOML **Config system** with key management
-- **Logger** with file output and memory
-- **Shell** for interacting with services
-- **TUI** for live logs, thread and worker inspection _(optional)_
-- **Plugin system** for extending projects without modifying core code
-- Many Built-in **Services**, including **HTTP API**
+## Features
+- [**Service Registry**](https://github.com/xellu/nautica-api/wiki/Service-Registry)
+A System for managing plugins and their lifecycle and runtime. You can install 3rd party packages from [the Package Registry](https://napm.xellu.xyz/), or drop in `.py` files into `plugins/`.
+
+- **Built-in Services**
+Includes the [HTTP](https://github.com/xellu/nautica-api/wiki/Builtin-Services:-HTTP) and [WebSocket](https://github.com/xellu/nautica-api/wiki/Builtin-Services:-WebSockets) server, scheduler and more. Everything can be configured or disabled entirely.
+
+- [**Config Manager**](https://github.com/xellu/nautica-api/wiki/Config-Manager)
+A TOML configuration system with auto key management, live read and writes.
+
+- [**Log Manager**](https://github.com/xellu/nautica-api/wiki/Log-Manager)
+Provides a readable console and file output. Automatically resolves module from which it is being called.
+
+- [**Shell**](https://github.com/xellu/nautica-api/wiki/Builtin-Services:-Shell)
+Gives you a way to interact with the server. Additionally you can use the TUI to view all the workers and running threads.
+
+
+And more! [Learn more](https://github.com/xellu/nautica-api/wiki)
 
 ***
 
-I made N3 because I was solving the same problems in my projects, those being: configs, logging, figuring out startup orders, not to mention the validation boilerplate on every route. Because of this I made Nautica V2, which solved many of these issues, and V3 to improve on the idea.
+I made Nautica because I was solving the same problems in my projects, those being: configs, logging, figuring out startup orders, not to mention the validation boilerplate on every route. Because of this I made Nautica V2, which solved many of these issues, and V3 to improve on the idea.
 
 ## Get Started
 
@@ -31,33 +38,35 @@ Firstly, install Nautica:
 pip install nautica
 ```
 
-To create a project, use the CLI ([docs](https://github.com/xellu/nautica-api/wiki/CLI-Reference)):
+To create a project, use the Nautica CLI ([docs](https://github.com/xellu/nautica-api/wiki/CLI-Reference)):
 ```bash
-nautica create my-project
+nautica create my-project --demo
 cd my-project
 nautica run
 ```
 
-To setup an existing project:
+<br>
+Or continue working on an already existing project by installing it:
+
 ```bash
 cd my-project
 nautica install
-nautica run
 ```
+*This will automatically download all needed packages and create associated configuration files*/
 
 ***
 
-## How HTTP API Compares
+## How Nautica Compares
 
 ### Benchmark Performance
 
-| Library | Requests/Second | Avg Latency | Overall |
-| --- | --- | --- | --- |
-| Nautica3 | `2271` | `4.4ms` | - |
-| FastAPI | `2259` | `4.4ms` | 0.5% slower |
-| Flask | `75` | `132.6ms` | 96% slower |
+| Framework | Requests/Second | Avg Latency | Overall |
+| --------- | --------------- | ----------- | ------- |
+| Nautica3  | `3929`          | `2.5ms`     | *Baseline*                       |
+| FastAPI   | `3154`          | `3.2ms`     | 24% slower, 19% higher latency   |
+| Flask     | `75`            | `132.6ms`   | 50x slower, 98% higher latency |
 
-*Ran with 10 workers, for 10 seconds. Nautica3 matches FastAPI despite running additional middleware, requirement parsing, and logging on every request.*
+> *Ran with 10 workers, for 10 seconds. Logging disabled, no-op routes.*
 
 ### Code Complexity
 
@@ -66,7 +75,7 @@ Similarly to SvelteKit, Nautica defines the route names for you. This helps to r
 #### Nautica3
 ```py
 # file: src/http/api/v1/auth.py
-from napi.http import HTTP, Context, Reply
+from napi.http import HTTP, Context, Reply, Error
 from somewhere import username, password
 
 @HTTP.POST()
@@ -74,7 +83,7 @@ from somewhere import username, password
 def login(ctx: Context):
     if ctx.body["username"] == username and ctx.body["password"] == password:
         return Reply(ok=True)
-    return Reply(ok=False, error="Invalid credentials"), 401
+    raise Error(401, "Invalid credentials")
 ```
 
 #### Flask
@@ -93,31 +102,82 @@ def login():
     data = request.get_json(silent=True) or {}
     if data.get("username") == username and data.get("password") == password:
         return json.dumps({"ok": True})
+
     return json.dumps({"ok": False, "error": "Invalid credentials"}), 401
 
 app.register_blueprint(v1auth)
 app.run(port=8101)
 ```
 
-#### FastAPI
+### Flexibility
+
+
+#### Request Validation
+FastAPIs Pydantic models are fine..
 ```py
-# file: main.py
-from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import uvicorn
-from somewhere import username, password
 
-app = FastAPI()
+class ListUsersModel(BaseModel):
+    format: str
+    limit: int
 
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-@app.post("/api/v1/auth/login")
-def login(body: LoginRequest):
-    if body.username == username and body.password == password:
-        return {"ok": True}
-    raise HTTPException(status_code=401, detail="Invalid credentials")
-
-uvicorn.run(app, port=8101)
+@app.get("/api/users")
+async def list_users(body: ListUsersModel):
+    ...
 ```
+
+But Nautica's Requirement system gives you more freedom:
+
+```py
+from napi.http import HTTP, Context, Require
+
+@HTTP.POST()
+@HTTP.Require( body = {"format": Require.AnyOf("dict", "list"), "limit": int} )
+async def users(ctx: Context):
+    ...
+```
+Which gives you access to default type checking + 6 `Requirement` validators:
+
+`AnyOf(*options: any)`, `AnyTypeOf(*types: type)`, `ExactMatch(match: any)`, `RegExMatch(regex: str)`, `File(max_size?: int, mime?: str)` and `ListOf(obj: type | dict | Requirement, max_length?: int, max_length?: int)`.
+
+> You can implement your custom validators on top of the system, [learn more on the wiki](https://github.com/xellu/nautica-api/wiki/Requirement-Validators#custom-validators).
+
+
+#### Response Validation
+
+Similarly, FastAPI uses type hints to determine the response of a route..
+
+```py
+from pydantic import BaseModel
+
+class AuthResponse:
+    session: str
+
+@app.post("api/auth/login")
+def login(body: LoginBody) -> AuthResponse:
+    ...
+```
+
+Nautica instead uses a decorator-based approach:
+```py
+from napi.http import HTTP, Context, Error, ReplyModel
+
+@HTTP.POST()
+@HTTP.Responses(
+    ReplyModel(200, {"session": str}),
+    Error(401)
+)
+def login(ctx: Context):
+    ...
+```
+
+If you want to prevent faulty responses, you can use the **strict** mode:
+
+```py
+@HTTP.Responses(
+    ...,
+    strict = True
+)
+# Cancels all responses that don't conform to a schema defined above
+```
+

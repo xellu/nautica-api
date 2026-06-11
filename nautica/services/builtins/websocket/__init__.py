@@ -99,5 +99,5 @@ class WebSocket(Service):
 Service.Export(
     WebSocket,
     srcDir = "ws",
-    depends_on = ["HTTPRouter"]
+    depends_on = ["HTTPRouter", "HTTPServer:after"]
 )
