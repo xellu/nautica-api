@@ -1,5 +1,5 @@
 from ....models.Http import InFlightRouteData, RouteRequirements, AttachedFile
-from ....models.Requirements import RequirementResponse, Requirement
+from ....models.Requirements import RequirementResponse, Requirement, typeToString
 from ....manager import Logger
 from starlette.requests import Request
 
@@ -88,7 +88,7 @@ class RequirementParser:
     def _validate(schema: dict, source, add_error, coerce: bool = False, prefix: str = ""):
         for k, _type in schema.items():
             if k not in source:
-                add_error(f"Key '{k}' is required but was not provided, schema={RouteRequirements.typeToString(_type)}")
+                add_error(f"Key '{k}' is required but was not provided, schema={typeToString(_type)}")
                 continue
 
             value = source[k]
@@ -102,7 +102,7 @@ class RequirementParser:
             #nested json
             elif isinstance(_type, dict):
                 if not isinstance(source.get(k), dict):
-                    add_error(f"Key '{prefix}{k}' does not match expression {RouteRequirements.typeToString(_type)}")
+                    add_error(f"Key '{prefix}{k}' does not match expression {typeToString(_type)}")
                     continue
                     
                 RequirementParser._validate(schema[k], source.get(k), add_error, coerce, prefix=f"{k}.")
@@ -116,12 +116,12 @@ class RequirementParser:
                     else:
                         _type(value)
                 except (ValueError, TypeError):
-                    add_error(f"Key '{prefix}{k}' has to match '{RouteRequirements.typeToString(_type)}', got unconvertible value '{value}'")
+                    add_error(f"Key '{prefix}{k}' has to match '{typeToString(_type)}', got unconvertible value '{value}'")
                 else:
                     source[k] = _type(value)
             else:
                 if not isinstance(value, _type):
-                    add_error(f"Key '{k}' has to match '{RouteRequirements.typeToString(_type)}', got '{type(value).__name__}'")
+                    add_error(f"Key '{k}' has to match '{typeToString(_type)}', got '{type(value).__name__}'")
 
     async def getBody(self, request: Request):
         try:

@@ -4,7 +4,7 @@ from starlette.responses import Response, FileResponse, StreamingResponse, Plain
 from starlette.datastructures import UploadFile
 
 from ..ext.StatusCodes import getMessage
-from .Requirements import File, Requirement
+from .Requirements import File, Requirement, typeToString
 
 import time
 from os import PathLike
@@ -27,20 +27,10 @@ class RouteRequirements:
     def getQuery(self): return self.query
     def getFiles(self): return self.files
 
-    @staticmethod
-    def typeToString(v):
-        if isinstance(v, dict):
-            nested = []
-            for k, _type in v.items():
-                nested.append(f"{k}={RouteRequirements.typeToString(_type)}")
-            return f"nested({', '.join(nested)})"
-        
-        return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)
-
     def toJson(self):
         """Returns all requirement fields as a JSON-serializable dict, converting types to their name strings."""
         def serialize(d: dict):
-            return {k: RouteRequirements.typeToString(v) for k, v in d.items()}
+            return {k: typeToString(v) for k, v in d.items()}
 
         return {
             "body": serialize(self.body),

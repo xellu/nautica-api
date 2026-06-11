@@ -159,9 +159,7 @@ class ListOf(Requirement):
         return True
         
     def __str__(self):
-        from .Http import RouteRequirements
-        
-        return f"listOf({RouteRequirements.typeToString(self.obj)}{', min='+str(self.min_length) if self.min_length else ''}{', max='+str(self.max_length) if self.max_length else ''})"
+        return f"listOf({typeToString(self.obj)}{', min='+str(self.min_length) if self.min_length else ''}{', max='+str(self.max_length) if self.max_length else ''})"
     
 class RequirementResponse:
     def __init__(self, ok: bool, headers: dict = None, cookies: dict = None, body: dict = None, query: dict = None, files: dict = None, missingData: dict | None = None):
@@ -173,3 +171,12 @@ class RequirementResponse:
         self.body = body or {}
         self.query = query or {}
         self.files = files or {}
+        
+def typeToString(v):
+    if isinstance(v, dict):
+        nested = []
+        for k, _type in v.items():
+            nested.append(f"{k}={typeToString(_type)}")
+        return f"nested({', '.join(nested)})"
+    
+    return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)

@@ -1,7 +1,7 @@
 from ....ext.Util import maybeAwait
 from ....ext.StatusCodes import *
-from ....models.Http import PreFlightRouteData, RequestContext, Reply, ErrorReply, InFlightRouteData, ReplyModel, RouteRequirements
-from ....models.Requirements import RequirementResponse
+from ....models.Http import PreFlightRouteData, RequestContext, Reply, ErrorReply, InFlightRouteData, ReplyModel
+from ....models.Requirements import RequirementResponse, typeToString
 from ....services import Services
 from ....manager import Config, Logger
 from .requirements import RequirementParser, Requirement
@@ -122,7 +122,7 @@ class Middleware:
                         continue
                     
                 elif not isinstance(v, data[k]):
-                    errors.append(f"Key '{k}' does not match the expression {RouteRequirements.typeToString(v)}, type '{type(data[k]).__name__}' was provided instead")
+                    errors.append(f"Key '{k}' does not match the expression {typeToString(v)}, type '{type(data[k]).__name__}' was provided instead")
             
             if errors:
                 return False, "; ".join(errors)
