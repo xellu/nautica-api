@@ -1,4 +1,7 @@
-from nautica.models.Websocket import WSRoute, WebSocketContext as Context, WSError as Error
+from nautica.models.Websocket import WSRoute, WebSocketContext, WSError
+
+Context = WebSocketContext
+Error = WSError
 
 class RouteManager:
     def __init__(self):

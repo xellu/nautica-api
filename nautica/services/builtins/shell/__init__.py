@@ -21,8 +21,6 @@ class Shell(Service):
     def onInstall(self):
         Config.Update("nautica",
             ConfigBuilder()
-                .add("services.shell", True, comment="Enables command execution and console input")
-
                 .add("shell.systemdMode", False, comment="Disables console input, to work as a systemd service")
                 .add("shell.gui", False, comment="Whether to use textual TUI renderer")
                 .add("shell.guiTheme", "frost", comment="Available themes are: frost (default), catppuccin, nord, gruvbox, tokyo-night, textual-dark, solarized-light, atom-one-dark, atom-one-light")
@@ -41,10 +39,6 @@ class Shell(Service):
         from .commands import (
             basic
         )
-
-        
-    def isEnabled(self):
-        return Config("nautica")["services.shell"]
     
     def onStart(self, registry):        
         #import builtin commands

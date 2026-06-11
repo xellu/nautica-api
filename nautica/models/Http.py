@@ -1,12 +1,14 @@
 from starlette.requests import Request
 from starlette.datastructures import URL
-from starlette.responses import Response
+from starlette.responses import Response, FileResponse, StreamingResponse, PlainTextResponse, RedirectResponse, HTMLResponse, ContentStream
 from starlette.datastructures import UploadFile
 
 from ..ext.StatusCodes import getMessage
-from .Requirements import File
+from .Requirements import File, Requirement, typeToString
 
 import time
+from os import PathLike
+
 class RouteRequirements:
     """Declares expected type schemas for each part of an incoming request."""
 
@@ -25,14 +27,10 @@ class RouteRequirements:
     def getQuery(self): return self.query
     def getFiles(self): return self.files
 
-    @staticmethod
-    def typeToString(v):
-        return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)
-
     def toJson(self):
         """Returns all requirement fields as a JSON-serializable dict, converting types to their name strings."""
         def serialize(d: dict):
-            return {k: RouteRequirements.typeToString(v) for k, v in d.items()}
+            return {k: typeToString(v) for k, v in d.items()}
 
         return {
             "body": serialize(self.body),
@@ -133,7 +131,7 @@ class Reply:
 
     def SetHeader(self, headers: dict):
         """Merges the given dict into the response headers."""
-        self.headers = headers
+        self.headers.update(headers)
         return self
 
     def SetCookie(self, name: str):
@@ -144,6 +142,41 @@ class Reply:
         """Tells Middleware to serialize this as a list, if no values are provided"""
         self.is_list = value
         return self
+    
+    def toJson(self) -> dict | list:
+        if self.array or self.is_list:
+            return list(self.array)
+        return self.json
+    
+    @staticmethod
+    def list(*array):
+        return Reply(*array).IsList()
+    
+    @staticmethod
+    def plainText(content: any, media_type: str | None = None) -> PlainTextResponse:
+        return PlainTextResponse(content, media_type=media_type)
+        
+    @staticmethod
+    def html(content: any) -> HTMLResponse:
+        return HTMLResponse(content)
+    
+    @staticmethod
+    def stream(content: ContentStream, media_type: str | None = None) -> StreamingResponse:
+        return StreamingResponse(content, media_type = media_type)
+    
+    @staticmethod
+    def file(path: str | PathLike[str], media_type: str | None = None, filename: str | None = None, method: str | None = None, content_disposition_type: str = "attachment") -> FileResponse:
+        return FileResponse(
+            path,
+            media_type = media_type,
+            filename = filename,
+            method = method,
+            content_disposition_type = content_disposition_type
+        )
+        
+    @staticmethod
+    def redirect(url: str | URL) -> RedirectResponse:
+        return RedirectResponse(url)
 
 class ErrorReply(Exception):
     """Represents an HTTP error response. Can be returned or raised from a handler."""
@@ -219,5 +252,13 @@ class Cookie:
             "samesite": self._same_site,
         }
         return self._reply
+
+class ReplyModel:
+    def __init__(self, status_code: int = 200, shape: dict | type | Requirement | ErrorReply = None):
+        if not (isinstance(shape, dict) or isinstance(shape, type) or isinstance(shape, Requirement) or isinstance(shape, ErrorReply)):
+            raise TypeError(f"ReplyModel only accepts dicts, types, Requirements and ErrorReplies")
     
+        self.status_code = status_code
+        self.shape = shape
+        
 #yes i ai generated the docs, i cba to do this shit

@@ -1,22 +1,25 @@
-from ..models.Service import Service
-from ..manager import Logger, Config
+from ..models.Service import Service, ServiceContext, ServiceHelper
+from ..manager import Logger
 
 from ..ext.Util import importModule
 from ..ext.Path import getRoot
 
 import os
 import time
+from typing import Type, TypeVar, overload, Any
+
+T = TypeVar('T', bound='Service')
 
 class ServiceRegistryManager:
     def __init__(self):
         self.instances: set[Service] = set()
         
         self.autoStart = False
-        self.startQueue = []
+        self.startQueue: list[Service] = []
         
         self.should_exit = False
         
-    def Create(self, serv: Service):
+    def create(self, serv: Service):
         if not isinstance(serv, Service):
             raise Exception(f"'{serv}' has type {type(serv).__name__}, required type: Service")
     
@@ -27,21 +30,38 @@ class ServiceRegistryManager:
             
         self.instances.add(serv)
     
-        if self.autoStart: serv._onStart(self)
-        else: self.startQueue.append(serv)
+        if self.autoStart:
+            serv.onInstall()
+            serv.onSetup()
+            serv._onStart(self)
+            return
         
-    def Cancel(self, serv: Service):
+        self.startQueue.append(serv)
+        
+    def cancel(self, serv: Service):
         if serv in self.instances:
             self.instances.remove(serv)
             
-    def get(self, serviceName) -> Service | None:
-        for s in self.instances:
-            if s._getName() == serviceName:
-                return s
-            
+    @overload
+    def get(self, target: Type[T]) -> T | None:
+        pass
     
-    def Get(self, serviceName) -> Service | None:
-        return self.get(serviceName)
+    @overload
+    def get(self, target: str) -> Service | None:
+        pass
+
+    #this is kinda how java works
+    def get(self, target: Service | str) -> Any | None:
+        if isinstance(target, str):
+            for s in self.instances:
+                if s._getName() == target:
+                    return s
+        else:
+            for s in self.instances:
+                if isinstance(s, target):
+                    return s
+                    
+        return None
     
     def __getitem__(self, serviceName) -> Service | None:
         return self.get(serviceName)
@@ -69,16 +89,14 @@ class ServiceRegistryManager:
             imported += 1
                     
         if imported > 0: Logger.info(f"Imported {imported} plugins")
-    
-    def ImportAll(self):
-        self.ImportAll()
-    
+        
     def _prioritize(self, queue: list) -> list:
         return sorted(queue, key=lambda s: 0 if s._getName() == "System" else 1)
 
     def onInstall(self):
         for serv in self._prioritize(self.startQueue):
             try:
+                serv.isEnabled()
                 serv.onInstall()
             except Exception as e:
                 Logger.trace(e)
@@ -113,35 +131,93 @@ class ServiceRegistryManager:
         return result
 
     def onStart(self):
-        for serv in self._topoSort(self._prioritize(self.startQueue)):
+        # INSTALL---------------
+        Logger.info("Running pre-setup configuration...")
+        for serv in self.startQueue:
+            if not serv.isEnabled(): continue
+            
+            try:
+                serv.onInstall()
+            except Exception as e:
+                Logger.trace(e)
+                self.onClose("Failed to handle pre-setup configuration")
+        
+            #resolve dependencies
+            deps: list[ServiceContext] = []
+            for dep in serv._depends_on.copy():
+                ctx: ServiceContext = ServiceHelper(dep).getContext()
+
+                deps.append(ctx)
+                if ctx.after:
+                    #handle :after
+                    target: Service | None = self.get(ctx.name)
+                    if (not target or not target.isEnabled()) and not ctx.optional:
+                        Logger.critical(f"Unable to resolve service dependencies, dependency '{dep}' {'not found' if not dep else 'is disabled'}")
+                        self.onClose("Failed to resolve dependencies")
+                        return
+                    
+                    if target:
+                        target._depends_on.append(serv._getName() + "?" if ctx.optional else "")
+                        target._depends_on_ctx.append(ctx)
+                    
+                    serv._depends_on.remove(dep)
+                else:
+                    #add to ctx if not :after
+                    serv._depends_on_ctx.append(ctx)
+                            
+        boot_order: list[Service] = self._topoSort(self._prioritize(self.startQueue))
+        
+        # SETUP----------------------
+        Logger.info("Running service setup...")
+        for serv in boot_order:
             if not serv.isEnabled():
                 Logger.info(f"Service disabled: {serv._getName()}")
                 continue #skip disabled services
             
-            for dep in serv._depends_on: #crash on dependency error
-                if not self.get(dep):
-                    Logger.critical(f"Unable to load service, dependency '{dep}' not found")
+            
+            for ctx in serv._depends_on_ctx: #crash on dependency error
+                dep: Service = self.get(ctx.name)
+                if (not dep or not dep.isEnabled()) and not ctx.optional:
+                    Logger.critical(f"Unable to load service, dependency '{ctx.name}' {'not found' if not dep else 'is disabled'}")
                     
-                    self.onClose("Failed to initialize") #crash
+                    self.onClose("Unable to initialize") #crash
                     return
+            
             try:
-                serv.onInstall()
+                serv.onSetup(self)
+            except Exception as e:
+                Logger.trace(e)
+                self.onClose(f"Failed to initialize")
+                return
+            else:
+                Logger.debug(f"Service Setup: {serv._getName()}")
+
+        # STARTUP --------------------------
+        Logger.info("Booting up services...")
+        for serv in boot_order:
+            if not serv.isEnabled():
+                continue
+            
+            try:
                 serv._onStart(self)
             except Exception as e:
                 Logger.trace(e)
-                self.onClose(f"Unable to initialize")
+                self.onClose(f"Failed to start services")
                 return
             else:
-                Logger.ok(f"Service started: {serv._getName()}")
-
+                Logger.debug(f"Service Started: {serv._getName()}")
+                
         self.autoStart = True
         self.startQueue = []
 
-        Logger.info("All services online")
+        Logger.ok("All services online")
         
+        #keep main thread from exiting------------------
         while True:
             if self.should_exit: break
-            time.sleep(0.1) #keep main thread from exiting
+            time.sleep(0.1) 
+        
+        
         
     def onClose(self, reason: str | None = None):
         Logger.info(f"Stopping all services... {reason=}")
