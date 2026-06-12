@@ -1,5 +1,5 @@
 from ..models.Service import Service, ServiceContext, ServiceHelper
-from ..manager import Logger
+from ..manager import Logger, LogLevel, Config
 
 from ..ext.Util import importModule
 from ..ext.Path import getRoot
@@ -157,7 +157,7 @@ class ServiceRegistryManager:
                         return
                     
                     if target:
-                        target._depends_on.append(serv._getName() + "?" if ctx.optional else "")
+                        target._depends_on.append(serv._getName() + ("?" if ctx.optional else ""))
                         target._depends_on_ctx.append(ctx)
                     
                     serv._depends_on.remove(dep)
@@ -166,6 +166,15 @@ class ServiceRegistryManager:
                     serv._depends_on_ctx.append(ctx)
                             
         boot_order: list[Service] = self._topoSort(self._prioritize(self.startQueue))
+
+        #display boot order
+        if Config("nautica")["nautica.debug"]:
+            order_table = Logger.table().labels(["Pos", "Service", "Depends On"])
+            for i, s in enumerate(boot_order):
+                if not s.isEnabled(): continue
+                
+                order_table.row([i, s._getName(), ", ".join(s._depends_on)])
+            order_table.display(LogLevel.DEBUG)
         
         # SETUP----------------------
         Logger.info("Running service setup...")

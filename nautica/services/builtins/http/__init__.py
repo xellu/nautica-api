@@ -1,4 +1,4 @@
-from . import router, server
+from . import router, server, openapi
 
 from ....manager import Config, ConfigBuilder
 from ....models.Service import Service

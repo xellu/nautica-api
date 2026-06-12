@@ -39,6 +39,20 @@ class WebSocket(Service):
         
         Logger.info(f"Registered {len(self.routes)} WebSocket endpoints")
  
+    def onSetup(self, registry):
+        if not registry.get("Shell"): return
+        
+        from ..shell.decorator import RegisterCommand
+
+        @RegisterCommand("lsws", "Lists all WebSocket Endpoints")
+        def list_ws_endpoints():
+            if not self.registry["WebSocket"]:
+                Logger.error("Service not enabled")
+                return
+                
+            for r in self.registry["WebSocket"].routes:
+                Logger.info(f"- {r.path}, packets={r.packets.keys()}")
+ 
     def pathToRoute(self, path):
         path = path.replace(".py", "").replace(getRoot("src/ws").replace("\\", "/"), "")
         path = path.replace("\\", "/")
@@ -99,5 +113,5 @@ class WebSocket(Service):
 Service.Export(
     WebSocket,
     srcDir = "ws",
-    depends_on = ["HTTPRouter", "HTTPServer:after"]
+    depends_on = ["HTTPRouter", "HTTPServer:after", "Shell?"]
 )

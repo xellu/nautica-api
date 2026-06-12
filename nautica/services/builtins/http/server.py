@@ -3,7 +3,7 @@ from ....manager import Config, Logger
 
 from .middleware import Middleware
 from ....models.Http import ErrorReply
-from ....ext.StatusCodes import NOT_FOUND
+from ....ext.StatusCodes import NOT_FOUND, METHOD_NOT_ALLOWED
 from ....ext.Path import getRoot
 
 from starlette.applications import Starlette
@@ -34,6 +34,21 @@ class HTTPServer(Service):
     def isEnabled(self):
         return Config("nautica")["services.http"]
 
+    def onSetup(self, registry):
+        if not registry.get("Shell"): return
+        
+        from ..shell.decorator import RegisterCommand
+        
+        @RegisterCommand("lshttp", "Lists all HTTP Endpoints")
+        def list_http_endpoints():
+            for r in self.router.routes:
+                beforeCount = len(r.getBeforeHandlers() or [])
+                afterCount = len(r.getAfterHandlers() or [])
+                
+                Logger.info(f"- [{r.getMethod().upper()}] {r.getPath()} - {'@Before='+str(beforeCount)+', ' if beforeCount else ''}{'@After='+str(afterCount)+', ' if afterCount else ''}func={r.getFunc()}")
+        
+        
+
     def onStart(self, registry):
         super().onStart(registry)
 
@@ -45,12 +60,10 @@ class HTTPServer(Service):
             routes = self.transformRoutes(),
             lifespan = self.lifespan,
             exception_handlers = {
-                404: self.handle_404
+                404: self.handle_404,
+                405: self.handle_405
             }
         )
-        
-        if registry.get("Shell"):
-            self.registerCommands()
         
         #cors middleware
         if Config("nautica")["http.cors.enabled"]:
@@ -110,32 +123,16 @@ class HTTPServer(Service):
             
         return out
         
-    def registerCommands(self):
-        from ..shell.decorator import RegisterCommand
-        
-        @RegisterCommand("lshttp", "Lists all HTTP Endpoints")
-        def list_http_endpoints():
-            for r in self.router.routes:
-                beforeCount = len(r.getBeforeHandlers() or [])
-                afterCount = len(r.getAfterHandlers() or [])
-                
-                Logger.info(f"- [{r.getMethod().upper()}] {r.getPath()} - {'@Before='+str(beforeCount)+', ' if beforeCount else ''}{'@After='+str(afterCount)+', ' if afterCount else ''}func={r.getFunc()}")
-            
-        @RegisterCommand("lsws", "Lists all WebSocket Endpoints")
-        def list_ws_endpoints():
-            if not self.registry["WebSocket"]:
-                Logger.error("Service not enabled")
-                return
-                
-            for r in self.registry["WebSocket"].routes:
-                Logger.info(f"- {r.path}, packets={r.packets.keys()}")
-            
-        
-        
     async def handle_404(self, request: Request, exc: HTTPException):
         return Middleware.constructResponse(
             ErrorReply(NOT_FOUND, details={"exception": str(exc)}).toReply(), NOT_FOUND
         )
         
+    async def handle_405(self, request: Request, exc: HTTPException):
+        return Middleware.constructResponse(
+            ErrorReply(METHOD_NOT_ALLOWED, details={"exception": str(exc)}).toReply(), METHOD_NOT_ALLOWED
+        )
+        
+        
     
-Service.Export(HTTPServer, depends_on=["HTTPRouter", "WebSocket?", "Shell"])
+Service.Export(HTTPServer, depends_on=["HTTPRouter", "Shell?"])
