@@ -4,6 +4,7 @@ from ..memory import MemoryManager
 from .levels import LogLevel, LevelColors
 from .tableutil import TableUtil
 
+import re
 import os
 import sys
 import time
@@ -96,7 +97,9 @@ class LogManager:
             color_msg = LevelColors.get(level, [Fore.LIGHTMAGENTA_EX, Fore.LIGHTMAGENTA_EX])[1]
 
             if level.value >= self.level.value:
-                print(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}", *args)
+                formatted = message.replace("//", f"{Fore.LIGHTBLACK_EX}//")
+                
+                print(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{formatted}{Fore.RESET}", *args)
                 # LogMemory.Add(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}")
                 LogMemory.Add({
                     "moduleName": {
