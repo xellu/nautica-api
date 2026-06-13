@@ -51,6 +51,7 @@ class HTTPRouter(Service):
                     preflight = PreFlightRoute,
                     sourceFile = file
                 )
+                # print([f"{m.status_code}: {m.shape}" for m in (route.getReplyModels() or [])])
                 # print(route.getMethod(), route.getPath(), route.getRequirements().getBody())
                 self.routes.append(route)
                

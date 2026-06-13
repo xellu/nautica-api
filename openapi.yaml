@@ -1,0 +1,349 @@
+openapi: 3.1.0
+info:
+  title: Nautica API
+  version: 1.0.0
+servers:
+- url: http://127.0.0.1
+  description: Development
+paths:
+  /api/v2/listings:
+    post:
+      summary: Create listing
+      parameters:
+      - name: draft
+        in: query
+        required: true
+        schema:
+          type: boolean
+      - name: notify_followers
+        in: query
+        required: true
+        schema:
+          type: boolean
+      - name: currency
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - USD
+          - EUR
+          - GBP
+          - CZK
+          - JPY
+      - name: authorization
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^Bearer [A-Za-z0-9._\-]+$
+      - name: x-client-version
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^\d+\.\d+\.\d+$
+      - name: x-idempotency-key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{32}$
+      - name: session_id
+        in: cookie
+        required: true
+        schema:
+          type: string
+          pattern: ^sess_[a-zA-Z0-9]{24}$
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - title
+              - category
+              - price
+              - inventory
+              - tags
+              - shipping
+              - metadata
+              - main_image
+              - thumbnail
+              - spec_sheet
+              properties:
+                title:
+                  type: string
+                  pattern: ^.{3,120}$
+                category:
+                  type: string
+                  enum:
+                  - electronics
+                  - clothing
+                  - books
+                  - home
+                  - other
+                price:
+                  type: object
+                  required:
+                  - amount
+                  - discount_pct
+                  properties:
+                    amount:
+                      anyOf:
+                      - type: integer
+                      - type: number
+                    discount_pct:
+                      type: integer
+                inventory:
+                  type: object
+                  required:
+                  - stock
+                  - sku
+                  - warehouses
+                  properties:
+                    stock:
+                      type: integer
+                    sku:
+                      type: string
+                      pattern: ^[A-Z]{2,4}-\d{4,8}$
+                    warehouses:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                        - id
+                        - quantity
+                        - location
+                        properties:
+                          id:
+                            type: string
+                          quantity:
+                            type: integer
+                          location:
+                            type: object
+                            required:
+                            - country
+                            - postal_code
+                            properties:
+                              country:
+                                type: string
+                                pattern: ^[A-Z]{2}$
+                              postal_code:
+                                type: string
+                      minItems: 1
+                      maxItems: 10
+                tags:
+                  type: array
+                  items:
+                    type: string
+                    pattern: ^[a-z0-9\-]{2,30}$
+                  maxItems: 20
+                shipping:
+                  type: object
+                  required:
+                  - method
+                  - weight_kg
+                  - dimensions
+                  properties:
+                    method:
+                      type: string
+                      enum:
+                      - standard
+                      - express
+                      - pickup
+                    weight_kg:
+                      anyOf:
+                      - type: integer
+                      - type: number
+                    dimensions:
+                      type: object
+                      required:
+                      - length_cm
+                      - width_cm
+                      - height_cm
+                      properties:
+                        length_cm:
+                          type: integer
+                        width_cm:
+                          type: integer
+                        height_cm:
+                          type: integer
+                metadata:
+                  type: object
+                  required:
+                  - source
+                  - external_refs
+                  properties:
+                    source:
+                      type: string
+                      enum:
+                      - web
+                      - mobile
+                      - api
+                      - import
+                    external_refs:
+                      type: array
+                      items:
+                        type: string
+                      maxItems: 50
+                main_image:
+                  type: string
+                  format: binary
+                thumbnail:
+                  type: string
+                  format: binary
+                spec_sheet:
+                  type: string
+                  format: binary
+            encoding:
+              main_image:
+                contentType: image/jpeg, image/png, image/webp
+              thumbnail:
+                contentType: image/jpeg, image/png
+              spec_sheet:
+                contentType: application/pdf
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - listing_id
+                - status
+                - urls
+                - warnings
+                properties:
+                  listing_id:
+                    type: string
+                    pattern: ^lst_[a-f0-9]{16}$
+                  status:
+                    type: string
+                    enum:
+                    - published
+                    - draft
+                    - pending_review
+                  urls:
+                    type: object
+                    required:
+                    - public
+                    - edit
+                    - main_image
+                    - thumbnail
+                    properties:
+                      public:
+                        type: string
+                      edit:
+                        type: string
+                      main_image:
+                        type: string
+                      thumbnail:
+                        type: string
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - listing_id
+                - status
+                - review_eta_hours
+                properties:
+                  listing_id:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                    - pending_review
+                  review_eta_hours:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                - details
+                properties:
+                  error:
+                    type: string
+                  details:
+                    anyOf:
+                    - type: string
+                    - type: object
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                - details
+                properties:
+                  error:
+                    type: string
+                  details:
+                    anyOf:
+                    - type: string
+                    - type: object
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                - details
+                properties:
+                  error:
+                    type: string
+                  details:
+                    anyOf:
+                    - type: string
+                    - type: object
+        '413':
+          description: Content Too Large
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                - details
+                properties:
+                  error:
+                    type: string
+                  details:
+                    anyOf:
+                    - type: string
+                    - type: object
+        '422':
+          description: Unprocessable Content
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - error
+                - details
+                properties:
+                  error:
+                    type: string
+                  details:
+                    anyOf:
+                    - type: string
+                    - type: object
+components:
+  schemas: {}

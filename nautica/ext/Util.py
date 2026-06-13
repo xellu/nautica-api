@@ -126,3 +126,31 @@ def rmDir(path) -> tuple[bool, str | None, Exception | None]:
         return True, None, None
     except Exception as e:
         return False, f"Failed to remove directory '{path}'", e
+    
+def stripUnicode(text: str):
+    out = ""
+    for char in text:
+        if char in string.ascii_letters + string.digits: out += char
+        else: out += "_"
+    return out
+
+def unwrapToml(obj) -> type | list[type]:
+    if isinstance(obj, dict):
+        return {str(k): unwrapToml(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [unwrapToml(v) for v in obj]
+    if isinstance(obj, str):
+        return str(obj)
+    if isinstance(obj, bool):
+        return bool(obj)
+    if isinstance(obj, int):
+        return int(obj)
+    if isinstance(obj, float):
+        return float(obj)
+    return obj
+
+def clearCache():
+    for _dir in walkPath(".", include_dirs=True):
+        if _dir.endswith("__pycache__"):
+            ok, _, _ = rmDir(_dir)
+            yield _dir, ok

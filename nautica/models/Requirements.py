@@ -11,6 +11,10 @@ class Requirement:
         """Returns True if content satisfies this requirement, False otherwise."""
         pass
     
+    def toComponent(self):
+        """Returns a dict representing an OpenAPI Component"""
+        return {}
+    
     def __str__(self):
         return "Expression()"
 
@@ -22,6 +26,15 @@ class AnyOf(Requirement):
 
     def isValid(self, content):
         return content in self.options
+    
+    def toComponent(self):
+        if not self.options:
+            return { "type": "string", "enum": [] }
+            
+        return {
+            "type": typeToProperName(type(self.options[0])) if len(self.options) > 0 else "string",
+            "enum": self.options
+        }
     
     def __str__(self):
         return f"anyOf({', '.join(self.options)})"
@@ -37,6 +50,11 @@ class AnyTypeOf(Requirement):
             if isinstance(content, t): ok = True
         return ok
     
+    def toComponent(self):
+        return {
+            "anyOf": [{"type": typeToProperName(t)} for t in self.types]
+        }
+    
     def __str__(self):
         return f"anyTypeOf({', '.join([t.__name__ for t in self.types])})"
 
@@ -48,6 +66,12 @@ class ExactMatch(Requirement):
 
     def isValid(self, content):
         return content == self.match
+    
+    def toComponent(self):
+        return {
+            "type": typeToProperName(type(self.match)),
+            "enum": [self.match]
+        }
     
     def __str__(self):
         return f"exactMatch({self.match})"
@@ -63,6 +87,12 @@ class RegExMatch(Requirement):
         if not isinstance(content, str): return False
         
         return bool(self.regex.search(str(content)))
+    
+    def toComponent(self):
+        return {
+            "type": "string",
+            "pattern": self._str
+        }
 
     def __str__(self):
         return f"regExMatch({self._str})"
@@ -89,6 +119,29 @@ class File(Requirement):
             return f"{self.max_size / self.KB():.1f}KB"
         return f"{self.max_size}B"
         
+    def toComponent(self): #don't use in components
+        return {
+            "requestBody": {
+                "content": {
+                    "multipart/form-data": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "file": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "encoding": {
+                            "file": {
+                                "contentType": self.mime
+                            }
+                        }
+                    }
+                }
+            }
+        }
     
     def isValid(self, content: UploadFile) -> bool:
         # if not isinstance(content, UploadFile):
@@ -141,6 +194,17 @@ class ListOf(Requirement):
                 if not self._validateDict(entry, self.obj): return False
                 
         return True
+    
+    def toComponent(self):
+        d = {
+            "type": "array",
+            "items": serializeIntoComponent(self.obj)
+        }
+        if self.min_length: d["minItems"] = self.min_length
+        if self.max_length: d["maxItems"] = self.max_length
+        
+        return d
+        
                 
     def _validateDict(self, source: dict, schema: dict): 
         for k, v in schema.items():
@@ -180,3 +244,47 @@ def typeToString(v):
         return f"nested({', '.join(nested)})"
     
     return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)
+
+#openapi bullshi
+def typeToProperName(t: type | dict):
+    if t == str: return "string"
+    if t == int: return "integer"
+    if t == float: return "number"
+    if t == bool: return "boolean"
+    if t == list: return "array"
+    if t == dict or isinstance(t, dict): return "object"
+    if t == bytes: return "string" #format binary
+    if t == None: return "null"
+    
+    from ..manager import Logger
+    Logger.warn(t)
+    
+    return t.__name__ if hasattr(t, "__name__") else "UNKNOWN" #fallback
+
+def serializeIntoComponent(obj: type | dict | Requirement) -> dict:
+    if isinstance(obj, dict):
+        return dictToComponent(obj)
+    
+    if isinstance(obj, Requirement):
+        return obj.toComponent()
+    
+    return {"type": typeToProperName(obj)}
+
+def dictToComponent(d: dict[str, dict | type]) -> dict:
+    comp = {
+        "type": "object",
+        "required": list(d.keys()),
+        "properties": {}
+    }
+
+    for k, v in d.items():
+        if isinstance(v, dict):
+            comp["properties"][k] = dictToComponent(v)
+        
+        elif isinstance(v, Requirement):
+            comp["properties"][k] = v.toComponent()
+        
+        else:
+            comp["properties"][k] = {"type": typeToProperName(v)}
+
+    return comp

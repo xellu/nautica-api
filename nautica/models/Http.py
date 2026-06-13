@@ -4,115 +4,10 @@ from starlette.responses import Response, FileResponse, StreamingResponse, Plain
 from starlette.datastructures import UploadFile
 
 from ..ext.StatusCodes import getMessage
-from .Requirements import File, Requirement, typeToString
+from .Requirements import File, AnyTypeOf, Requirement, typeToString
 
 import time
 from os import PathLike
-
-class RouteRequirements:
-    """Declares expected type schemas for each part of an incoming request."""
-
-    def __init__(self, body: dict[type] = None, form: dict[type] = None, headers: dict[type] = None, cookies: dict[type] = None, query: dict[type] = None, files: dict[File] = None):
-        self.body = body or {}
-        self.form = form or {}
-        self.headers = headers or {}
-        self.cookies = cookies or {}
-        self.query = query or {}
-        self.files = files or {}
-
-    def getBody(self): return self.body
-    def getForm(self): return self.form
-    def getHeaders(self): return self.headers
-    def getCookies(self): return self.cookies
-    def getQuery(self): return self.query
-    def getFiles(self): return self.files
-
-    def toJson(self):
-        """Returns all requirement fields as a JSON-serializable dict, converting types to their name strings."""
-        def serialize(d: dict):
-            return {k: typeToString(v) for k, v in d.items()}
-
-        return {
-            "body": serialize(self.body),
-            "form": serialize(self.form),
-            "headers": serialize(self.headers),
-            "cookies": serialize(self.cookies),
-            "query": serialize(self.query),
-            "files": serialize(self.files)
-        }
-
-
-class PreFlightRouteData:
-    """Holds route metadata captured at decoration time, before a URL path is assigned."""
-
-    def __init__(self, func, method, name, requirements: RouteRequirements | None = None):
-        self.func = func
-        self.method = method
-        self.name = name
-        self.requirements = requirements
-
-    def getFunc(self): return self.func
-    def getMethod(self): return self.method
-    def getName(self): return self.name
-    def getRequirements(self): return self.requirements
-
-
-class InFlightRouteData:
-    """Complete route descriptor built from a PreFlightRouteData and an assigned URL path."""
-
-    def __init__(self, path: str, preflight: PreFlightRouteData, sourceFile: str):
-        self.path = path
-        self.method = preflight.method
-        self.func = preflight.func
-        
-        self.requirements = preflight.requirements
-        self.sourceFile = sourceFile
-
-    def getBeforeHandlers(self): return getattr(self.func, "_before", [])
-    def getAfterHandlers(self): return getattr(self.func, "_after", [])
-
-    def getFunc(self): return self.func
-    def getMethod(self): return self.method
-    def getPath(self): return self.path
-    def getRequirements(self) -> RouteRequirements | None: return self.requirements
-    def getSourceFile(self) -> str: return self.sourceFile
-
-class AttachedFile:
-    def __init__(self, upload: UploadFile):
-        self.file = upload
-        self.filename = upload.filename
-        self.mime = upload.content_type
-        self.size = upload.size #updated on read
-    
-    async def read(self) -> bytes:
-        await self.file.seek(0)
-
-        data = await self.file.read()
-        self.size = len(data)
-        return data
-    
-    async def save(self, path: str):
-        data = await self.read()
-        with open(path, "wb") as f:
-            f.write(data)
-class RequestContext:
-    """Wraps a Starlette Request and exposes it to route handlers."""
-
-    def __init__(self, request: Request):
-        self.request: Request = request
-        self.url: URL = request.url
-        self.clientIp: str | None = request.client.host if hasattr(request, "client") else None
-        
-        self.headers: dict = {}
-        self.query: dict = {}
-        self.cookies: dict = {}
-        self.body: dict = {}
-        self.files: dict[str, AttachedFile] = {}
-        
-        self.params: dict = request.path_params
-        
-        self.response: Response | None = None 
-        self.created_at = time.time()
 
 class Reply:
     """Builds an HTTP response body; pass kwargs for JSON or positional args for a JSON array."""
@@ -213,6 +108,130 @@ class ErrorReply(Exception):
             error = getMessage(self.status_code) if not self.message else self.message,
             details = self.details or {}
         )
+        
+    def toReplyModel(self):
+        return ReplyModel(
+            status_code = self.status_code,
+            shape = {
+                "error": str,
+                "details": AnyTypeOf(str, dict)    
+            }
+        )
+class ReplyModel:
+    def __init__(self, status_code: int = 200, shape: dict | type | Requirement | ErrorReply = None):
+        if not (isinstance(shape, dict) or isinstance(shape, type) or isinstance(shape, Requirement) or isinstance(shape, ErrorReply)):
+            raise TypeError(f"ReplyModel only accepts dicts, types, Requirements and ErrorReplies")
+    
+        self.status_code = status_code
+        self.shape = shape
+
+class RouteRequirements:
+    """Declares expected type schemas for each part of an incoming request."""
+
+    def __init__(self, body: dict[type] = None, form: dict[type] = None, headers: dict[type] = None, cookies: dict[type] = None, query: dict[type] = None, files: dict[File] = None):
+        self.body = body or {}
+        self.form = form or {}
+        self.headers = headers or {}
+        self.cookies = cookies or {}
+        self.query = query or {}
+        self.files = files or {}
+
+    def getBody(self): return self.body
+    def getForm(self): return self.form
+    def getHeaders(self): return self.headers
+    def getCookies(self): return self.cookies
+    def getQuery(self): return self.query
+    def getFiles(self): return self.files
+
+    def toJson(self):
+        """Returns all requirement fields as a JSON-serializable dict, converting types to their name strings."""
+        def serialize(d: dict):
+            return {k: typeToString(v) for k, v in d.items()}
+
+        return {
+            "body": serialize(self.body),
+            "form": serialize(self.form),
+            "headers": serialize(self.headers),
+            "cookies": serialize(self.cookies),
+            "query": serialize(self.query),
+            "files": serialize(self.files)
+        }
+
+
+class PreFlightRouteData:
+    """Holds route metadata captured at decoration time, before a URL path is assigned."""
+
+    def __init__(self, func, method, name, requirements: RouteRequirements | None = None, replyModel: list[ReplyModel] | None = None):
+        self.func = func
+        self.method = method
+        self.name = name
+        self.requirements = requirements
+        self.replyModel = replyModel
+
+    def getFunc(self): return self.func
+    def getMethod(self): return self.method
+    def getName(self): return self.name
+    def getRequirements(self): return self.requirements
+
+
+class InFlightRouteData:
+    """Complete route descriptor built from a PreFlightRouteData and an assigned URL path."""
+
+    def __init__(self, path: str, preflight: PreFlightRouteData, sourceFile: str):
+        self.path: str = path
+        self.method: str = preflight.method
+        self.func = preflight.func
+        
+        self.requirements: RouteRequirements | None = preflight.requirements
+        self.replyModels: list[ReplyModel] | None = preflight.replyModel
+        self.sourceFile: str = sourceFile
+
+    def getBeforeHandlers(self): return getattr(self.func, "_before", [])
+    def getAfterHandlers(self): return getattr(self.func, "_after", [])
+
+    def getFunc(self): return self.func
+    def getMethod(self): return self.method
+    def getPath(self): return self.path
+    def getRequirements(self) -> RouteRequirements | None: return self.requirements
+    def getSourceFile(self) -> str: return self.sourceFile
+    def getReplyModels(self) -> list[ReplyModel] | None: return self.replyModels
+
+class AttachedFile:
+    def __init__(self, upload: UploadFile):
+        self.file = upload
+        self.filename = upload.filename
+        self.mime = upload.content_type
+        self.size = upload.size #updated on read
+    
+    async def read(self) -> bytes:
+        await self.file.seek(0)
+
+        data = await self.file.read()
+        self.size = len(data)
+        return data
+    
+    async def save(self, path: str):
+        data = await self.read()
+        with open(path, "wb") as f:
+            f.write(data)
+class RequestContext:
+    """Wraps a Starlette Request and exposes it to route handlers."""
+
+    def __init__(self, request: Request):
+        self.request: Request = request
+        self.url: URL = request.url
+        self.clientIp: str | None = request.client.host if hasattr(request, "client") else None
+        
+        self.headers: dict = {}
+        self.query: dict = {}
+        self.cookies: dict = {}
+        self.body: dict = {}
+        self.files: dict[str, AttachedFile] = {}
+        
+        self.params: dict = request.path_params
+        
+        self.response: Response | None = None 
+        self.created_at = time.time()
     
 class Cookie:
     """Fluent builder for a single Set-Cookie header; call .build() to write it onto the Reply."""
@@ -252,13 +271,5 @@ class Cookie:
             "samesite": self._same_site,
         }
         return self._reply
-
-class ReplyModel:
-    def __init__(self, status_code: int = 200, shape: dict | type | Requirement | ErrorReply = None):
-        if not (isinstance(shape, dict) or isinstance(shape, type) or isinstance(shape, Requirement) or isinstance(shape, ErrorReply)):
-            raise TypeError(f"ReplyModel only accepts dicts, types, Requirements and ErrorReplies")
-    
-        self.status_code = status_code
-        self.shape = shape
         
 #yes i ai generated the docs, i cba to do this shit

@@ -225,7 +225,7 @@ class Middleware:
             
             #verify model
             
-            modelOk, modelErrors = self.checkModel(ctx.response, getattr(original, "_replyModel") if hasattr(original, "_replyModel") else None)
+            modelOk, modelErrors = self.checkModel(route.getReplyModels())
             isModelStrict = hasattr(original, "_enforceModels")
             
             if not modelOk and isModelStrict:
@@ -267,5 +267,6 @@ class Middleware:
             name = self.name if self.name else func.__name__,
             
             requirements = getattr(func, "_requirements", None),
+            replyModel = getattr(func, "_replyModel", None)
         ))
         return wrapper
