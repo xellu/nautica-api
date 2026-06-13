@@ -4,6 +4,7 @@ from .....manager import Logger, Config
 from .....models.Requirements import AnyOf, Requirement
 
 import os
+from colorama import Fore
 
 class ManualAutoOptions(AnyOf):
     def __init__(self):
@@ -45,7 +46,8 @@ def _help(command: str | None = None):
     
     Logger.info(f"All available commands ({len(s.handlers.values())}):")
     for cmd in s.handlers.values():
-        Logger.info(f" * {cmd.getUsage()}")
+        Logger.info(f" * {cmd.getUsage()} {Fore.LIGHTBLACK_EX}-> {cmd.description}")
+        
     Logger.info("To get more details about a command use 'man <command>'")
     
 @RegisterCommand(
