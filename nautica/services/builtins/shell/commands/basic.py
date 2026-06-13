@@ -91,7 +91,7 @@ def useGui(value: bool):
     Logger.ok(f"Switched to {'GUI' if value else 'Terminal'}, restart for changes to take effect.")
   
 @RegisterCommand(
-    "slist", "Lists all services"
+    "lsserv", "Lists all services"
 )
 def listServices():
     Logger.info("Showing all active services:")

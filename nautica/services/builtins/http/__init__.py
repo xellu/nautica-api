@@ -16,6 +16,7 @@ class HTTPConfig(Service):
                 .add("http.port", 8100, comment="Port to host the app on, by default is set to 8100")
                 .add("http.realIPHeader", "", comment="Name of the header which has the real ip, e.g. X-Real-IP, CF-Connecting-IP (if behind proxy), set to empty to use requesting machine's IP instead")
                 .add("http.logRequests", True, comment="Logs all successful requests. If disabled, only error requests are displayed, and boosts performance.")
+                .add("http.includeSchema", True, comment="If enabled, will include the request schema in error replies")
                 
                 #static files
                 .add("http.static.enabled", False, comment="Set to true if you wish to send static files from a directory")

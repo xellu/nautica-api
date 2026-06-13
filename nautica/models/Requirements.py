@@ -240,8 +240,8 @@ def typeToString(v):
     if isinstance(v, dict):
         nested = []
         for k, _type in v.items():
-            nested.append(f"{k}={typeToString(_type)}")
-        return f"nested({', '.join(nested)})"
+            nested.append(f"{k}: {typeToString(_type)}")
+        return "{" + ', '.join(nested) + "}"
     
     return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)
 

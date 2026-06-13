@@ -3,7 +3,7 @@ from ....manager import Config, Logger
 
 from .middleware import Middleware
 from ....models.Http import ErrorReply
-from ....ext.StatusCodes import NOT_FOUND, METHOD_NOT_ALLOWED
+from ....ext.StatusCodes import NOT_FOUND, METHOD_NOT_ALLOWED, BAD_REQUEST, INTERNAL_SERVER_ERROR
 from ....ext.Path import getRoot
 
 from starlette.applications import Starlette
@@ -60,8 +60,8 @@ class HTTPServer(Service):
             routes = self.transformRoutes(),
             lifespan = self.lifespan,
             exception_handlers = {
-                404: self.handle_404,
-                405: self.handle_405
+                500: self.handle_500,
+                HTTPException: self.handle_error
             }
         )
         
@@ -123,16 +123,16 @@ class HTTPServer(Service):
             
         return out
         
-    async def handle_404(self, request: Request, exc: HTTPException):
+    async def handle_500(self, request: Request, exc: HTTPException):
+        Logger.trace(exc)
         return Middleware.constructResponse(
-            ErrorReply(NOT_FOUND, details={"exception": str(exc)}).toReply(), NOT_FOUND
+            ErrorReply(INTERNAL_SERVER_ERROR, details={"exception": str(exc)}).toReply(), INTERNAL_SERVER_ERROR
         )
         
-    async def handle_405(self, request: Request, exc: HTTPException):
+    async def handle_error(self, request: Request, exc: HTTPException):
         return Middleware.constructResponse(
-            ErrorReply(METHOD_NOT_ALLOWED, details={"exception": str(exc)}).toReply(), METHOD_NOT_ALLOWED
-        )
-        
-        
+            ErrorReply(exc.status_code, details={"exception": str(exc)}).toReply(), exc.status_code
+        )        
+
     
 Service.Export(HTTPServer, depends_on=["HTTPRouter", "Shell?"])
