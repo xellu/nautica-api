@@ -4,6 +4,7 @@ benchmark.py
 test.py
 draft.md
 package-lock.n3
+openapi.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
