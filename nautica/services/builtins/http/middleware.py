@@ -224,8 +224,7 @@ class Middleware:
                 )
             
             #verify model
-            
-            modelOk, modelErrors = self.checkModel(route.getReplyModels())
+            modelOk, modelErrors = self.checkModel(ctx.response, route.getReplyModels())
             isModelStrict = hasattr(original, "_enforceModels")
             
             if not modelOk and isModelStrict:
