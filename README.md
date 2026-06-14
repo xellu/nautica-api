@@ -66,7 +66,7 @@ nautica install
 | FastAPI   | `3154`          | `3.2ms`     | 24% slower, 19% higher latency   |
 | Flask     | `75`            | `132.6ms`   | 50x slower, 98% higher latency |
 
-> *Ran with 10 workers, for 10 seconds. Logging disabled, no-op routes.*
+> *More in-depth report is available [here](https://github.com/xellu/nautica-api/wiki/Performance-Benchmark)*
 
 ### Code Complexity
 
