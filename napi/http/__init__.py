@@ -115,7 +115,16 @@ class RouteManager:
             async def get_user(ctx: Context): ...
         """
         def decorator(func):
-            func._replyModel = models
+            reply_models = []
+            for m in models:
+                if isinstance(m, ErrorReply):
+                    reply_models.append(m.toReplyModel())
+                elif isinstance(m, ReplyModel):
+                    reply_models.append(m)
+                else:
+                    raise Exception(f"'{type(m).__name__}' is not a valid reply model")
+            
+            func._replyModel = reply_models
             if strict:
                 func._enforceModels = True
             

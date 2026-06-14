@@ -45,7 +45,8 @@ def _help(command: str | None = None):
     
     Logger.info(f"All available commands ({len(s.handlers.values())}):")
     for cmd in s.handlers.values():
-        Logger.info(f" * {cmd.getUsage()}")
+        Logger.info(f" * {cmd.getUsage()} // {cmd.description}")
+        
     Logger.info("To get more details about a command use 'man <command>'")
     
 @RegisterCommand(
@@ -91,7 +92,7 @@ def useGui(value: bool):
     Logger.ok(f"Switched to {'GUI' if value else 'Terminal'}, restart for changes to take effect.")
   
 @RegisterCommand(
-    "slist", "Lists all services"
+    "lsserv", "Lists all services"
 )
 def listServices():
     Logger.info("Showing all active services:")

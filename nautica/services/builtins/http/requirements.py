@@ -1,6 +1,6 @@
 from ....models.Http import InFlightRouteData, RouteRequirements, AttachedFile
 from ....models.Requirements import RequirementResponse, Requirement, typeToString
-from ....manager import Logger
+from ....manager import Logger, Config
 from starlette.requests import Request
 
 class ErrorDetails:
@@ -63,12 +63,13 @@ class RequirementParser:
         #and check if it it matches needed data
         
         details = ErrorDetails()
+        include_schema = Config("nautica")["http.includeSchema"]
         
-        self._validate(needed.getHeaders(), headers, details.addToHeaders, coerce=False)
-        self._validate(needed.getCookies(), cookies, details.addToCookies, coerce=True)
-        self._validate(needed.getQuery(), query, details.addToQuery, coerce=True)
-        self._validate(needed.getBody(), body, details.addToBody, coerce=False)
-        self._validateFiles(needed.getFiles(), files, details.addToBody)
+        self._validate(needed.getHeaders(), headers, details.addToHeaders, coerce=False, include_schema=include_schema)
+        self._validate(needed.getCookies(), cookies, details.addToCookies, coerce=True, include_schema=include_schema)
+        self._validate(needed.getQuery(), query, details.addToQuery, coerce=True, include_schema=include_schema)
+        self._validate(needed.getBody(), body, details.addToBody, coerce=False, include_schema=include_schema)
+        self._validateFiles(needed.getFiles(), files, details.addToBody, include_schema=include_schema)
 
         #and return all the shit
         return RequirementResponse(
@@ -85,10 +86,10 @@ class RequirementParser:
         ) #wow
 
     @staticmethod
-    def _validate(schema: dict, source, add_error, coerce: bool = False, prefix: str = ""):
+    def _validate(schema: dict, source, add_error, coerce: bool = False, prefix: str = "", include_schema: bool = True):        
         for k, _type in schema.items():
             if k not in source:
-                add_error(f"Key '{k}' is required but was not provided, schema={typeToString(_type)}")
+                add_error(f"Key '{k}' is required but was not provided" + (f", schema={typeToString(_type)}" if include_schema else ""))
                 continue
 
             value = source[k]
@@ -96,13 +97,13 @@ class RequirementParser:
             #handle requirements
             if isinstance(_type, Requirement):
                 if not _type.isValid(value):
-                    add_error(f"Key '{prefix}{k}' does not match expression {str(_type)}")
+                    add_error(f"Key '{prefix}{k}' does not match expression{' '+str(_type) if include_schema else ''}")
             
         
             #nested json
             elif isinstance(_type, dict):
                 if not isinstance(source.get(k), dict):
-                    add_error(f"Key '{prefix}{k}' does not match expression {typeToString(_type)}")
+                    add_error(f"Key '{prefix}{k}' does not match expression{' '+typeToString(_type) if include_schema else ''}")
                     continue
                     
                 RequirementParser._validate(schema[k], source.get(k), add_error, coerce, prefix=f"{k}.")
@@ -116,12 +117,12 @@ class RequirementParser:
                     else:
                         _type(value)
                 except (ValueError, TypeError):
-                    add_error(f"Key '{prefix}{k}' has to match '{typeToString(_type)}', got unconvertible value '{value}'")
+                    add_error(f"Key '{prefix}{k}' has to match '{typeToString(_type) if include_schema else 'expression'}', got unconvertible value '{value}'")
                 else:
                     source[k] = _type(value)
             else:
                 if not isinstance(value, _type):
-                    add_error(f"Key '{k}' has to match '{typeToString(_type)}', got '{type(value).__name__}'")
+                    add_error(f"Key '{k}' has to match '{typeToString(_type) if include_schema else 'expression'}', got '{type(value).__name__}'")
 
     async def getBody(self, request: Request):
         try:
@@ -143,11 +144,11 @@ class RequirementParser:
             Logger.trace(e)
             return {}, {}
 
-    def _validateFiles(self, schema: dict, files: dict, add_error):
+    def _validateFiles(self, schema: dict, files: dict, add_error, include_schema: bool = True):
         for k, req in schema.items():
             if k not in files:
-                add_error(f"File '{k}' is required but was not provided, schema={str(req)}")
+                add_error(f"File '{k}' is required but was not provided" + (f", schema={str(req)}" if include_schema else ''))
                 continue
             
             if not req.isValid(files[k]):
-                add_error(f"File '{k}' does not match requirements defined as '{str(req)}'")
+                add_error(f"File '{k}' does not match requirements defined as '{str(req) if include_schema else 'expression'}'")
