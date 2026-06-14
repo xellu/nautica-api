@@ -58,7 +58,7 @@ class Middleware:
             # return JSONResponse(content=result, status_code=status_code)
             return Middleware.handleReply(Reply(**result), status_code)
         if isinstance(result, list):
-            return Middleware.handleReply(Reply(*result).IsList(), status_code)
+            return Middleware.handleReply(Reply(*result).asList(), status_code)
         
         #Other datatypes as plaintext
         return PlainTextResponse(str(result), status_code=status_code)

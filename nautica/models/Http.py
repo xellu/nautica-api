@@ -33,7 +33,7 @@ class Reply:
         """Returns a Cookie builder for the given cookie name."""
         return Cookie(name, self)
 
-    def IsList(self, value: bool = True):
+    def asList(self, value: bool = True):
         """Tells Middleware to serialize this as a list, if no values are provided"""
         self.is_list = value
         return self
@@ -45,7 +45,7 @@ class Reply:
     
     @staticmethod
     def list(*array):
-        return Reply(*array).IsList()
+        return Reply(*array).asList()
     
     @staticmethod
     def plainText(content: any, media_type: str | None = None) -> PlainTextResponse:
