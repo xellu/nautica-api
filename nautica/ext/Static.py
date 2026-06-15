@@ -215,24 +215,13 @@ class MyService(Service):
         super().__init__() # Keep this
 
     def onInstall(self):
-        # Register service toggle switch:
-        Config.Update("nautica",
-            ConfigBuilder()
-                .add("services.myservice", False, comment="Enable MyService")
-                .build()
-        )
-        
         # Register service-related configuration
         Config.New("myservice", # Will create a file called: config/myservice.toml
             ConfigBuilder()
                 # use .add(...) to add config keys
                 .build() # Creates empty config
         )
-
-    def isEnabled(self):
-        # Return True to enable the service, False to disable.
-        return Config("nautica")["services.myservice"]
-
+        
     def onStart(self, registry):
         # This is called when a service is starting
         Logger.ok("MyService started")
@@ -278,12 +267,11 @@ DATASET = {
 ) #Create an async function with request context. Note that you can create a request even without context, but by doing so, you'll lose access to it
 async def get_users(ctx: Context):
     if ctx.query["format"] == "dict":
-        # raise Exception("Failed request")
         return Reply(**DATASET) #The Reply sends a JSON Dictionary when provided with kwargs (note the **)
 
     if ctx.query["format"] == "list":
         users = [{"name": key, **value} for key, value in DATASET.items()]
-        return Reply(*users) #And sends a List as JSON, when provided with positional args (again, note the *)
+        return Reply.list(*users) #And sends a List as JSON, when provided with positional args (again, note the *)
                              #(!) Providing both args and kwargs raises a TypeError
 
     #No edgecase return needed, since if any other value for format will cause the request to fail before reaching your code
