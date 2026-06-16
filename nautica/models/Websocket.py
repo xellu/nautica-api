@@ -10,7 +10,7 @@ class WebSocketContext:
         
                 
     def __setattr__(self, name, value):
-        if name.startswith("_") or name in ("websocket", "clientIp", "id"):
+        if name.startswith("_") or name in ("ws", "clientIp", "id"):
             super().__setattr__(name, value)
         else:
             self._store[name] = value
@@ -23,10 +23,10 @@ class WebSocketContext:
         
         
     async def send(self, data: dict):
-        await self.websocket.send_json(data)
+        await self.ws.send_json(data)
     
     async def close(self, code: int = 1000):
-        await self.websocket.close(code)
+        await self.ws.close(code)
         
 class WSRoute:
     def __init__(self):
