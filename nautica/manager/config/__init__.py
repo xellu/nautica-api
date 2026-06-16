@@ -21,7 +21,7 @@ class ConfigManager:
         self.masterCfg = tomlkit.document()
         self.sub_configs = {}
 
-    def __call__(self, configId):
+    def __call__(self, configId) -> SubConfig: 
         if configId not in self.sub_configs:
             raise LookupError(f"Unable to find '{configId}' in configs, is it registered?")
         return self.sub_configs[configId]

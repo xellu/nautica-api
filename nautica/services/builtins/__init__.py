@@ -13,6 +13,7 @@ class System(Service):
         Config.New("nautica",
             ConfigBuilder()
                 .add("nautica.debug", False, "Enables tools and endpoints useful of debugging")
+                .add("services.shell", True, "Enables the interactive shell") #make sure services is the 2nd thing in the config
                 .build()
         )
         

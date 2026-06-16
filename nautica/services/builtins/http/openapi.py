@@ -11,11 +11,14 @@ import yaml
 
 class OpenAPIGenerator(Service):
     def onInstall(self):
-        Config.Update("nautica",
-            ConfigBuilder() \
-                .add("http.docs", False, "Generate OpenAPI Docs and expose them at /nautica:docs") \
-                .build()        
-        )
+        # Disabled for now
+        # TODO: figure out how to do this
+        
+        # Config.Update("nautica",
+        #     ConfigBuilder() \
+        #         .add("http.docs", False, "Generate OpenAPI Docs and expose them at /nautica:docs") \
+        #         .build()        
+        # )
         
         Config.New("openapi", 
             ConfigBuilder() \
@@ -155,4 +158,4 @@ class OpenAPIGenerator(Service):
 
         return docs
     
-Service.Export(OpenAPIGenerator, depends_on=["HTTPRouter", "Shell?", "HTTPServer:after"])
+Service.Export(OpenAPIGenerator, depends_on=["HTTPRouter", "HTTPConfig", "Shell?", "HTTPServer:after"])
