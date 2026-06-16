@@ -16,6 +16,7 @@ class WebSocket(Service):
         super().__init__()
         
         self.routes: list[WSRoute] = []
+        self.registry = None
         
     def onInstall(self):
         Config.Update("nautica", ConfigBuilder()
@@ -40,6 +41,7 @@ class WebSocket(Service):
         Logger.info(f"Registered {len(self.routes)} WebSocket endpoints")
  
     def onSetup(self, registry):
+        self.registry = registry
         if not registry.get("Shell"): return
         
         from ..shell.decorator import RegisterCommand
