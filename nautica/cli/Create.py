@@ -33,7 +33,7 @@ def _create(name, demo: bool = False):
     os.makedirs(name, exist_ok=True)
     setRoot(os.path.abspath(name))
 
-    for f in [".logs", "config", "plugins", "src/http"]:
+    for f in [".logs", "config", "plugins", "src/http", "src/lib"]:
         os.makedirs(getRoot(f), exist_ok=True)
 
     with open(getRoot(".gitignore"), "w") as f: f.write(GitIgnore)

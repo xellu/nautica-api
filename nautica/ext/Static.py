@@ -1,6 +1,6 @@
 import time
 
-RELEASE = "3.2.4"
+RELEASE = "3.2.5"
 EDITION = "Standard Edition"
 
 log_file = f"nautica_{time.strftime('%d_%m_%y__%H_%M_%S', time.localtime())}.log"
@@ -58,6 +58,7 @@ MANIFEST
 .logs/
 .testenv/
 config/
+plugins/*/
 package.zip
 
 # PyInstaller
