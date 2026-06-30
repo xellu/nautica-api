@@ -7,6 +7,7 @@ from .manager import MemoryManager
 from .manager import Scheduler
 
 from .services import Service, Services
+from .services.builtins.shell.decorator import RegisterCommand as ShellCommand, CommandRequirements as ShellArgs
 
 from . import (
     models,

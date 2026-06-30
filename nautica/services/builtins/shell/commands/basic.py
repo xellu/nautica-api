@@ -95,9 +95,9 @@ def useGui(value: bool):
     "lsserv", "Lists all services"
 )
 def listServices():
-    Logger.info("Showing all active services:")
+    Logger.info("Showing all services:")
     for s in Services.instances:
-        Logger.info(f" * {s._getName()}")
+        Logger.info(f" * {s._getName()} {'ENABLED' if s.isEnabled() else 'OFFLINE'}")
 
 @RegisterCommand("ram", "Shows ram usage")
 def ramUsage():
