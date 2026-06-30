@@ -25,6 +25,9 @@ class AnyOf(Requirement):
         self.options = list(options)
 
     def isValid(self, content):
+        for opt in self.options:
+            if isinstance(opt, Requirement) and opt.isValid(content): return True
+                
         return content in self.options
     
     def toComponent(self):
@@ -41,12 +44,15 @@ class AnyOf(Requirement):
 
 class AnyTypeOf(Requirement):
     """Validates that the content matches any of the data types provided"""
-    def __init__(self, *types: tuple[type]):
+    def __init__(self, *types: tuple[type | Requirement]):
         self.types = types
         
     def isValid(self, content):
         ok = False
         for t in self.types:
+            if isinstance(t, Requirement) and t.isValid(content):
+                ok = True
+                
             if isinstance(content, t): ok = True
         return ok
     
@@ -246,7 +252,9 @@ def typeToString(v):
     return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)
 
 #openapi bullshi
-def typeToProperName(t: type | dict):
+def typeToProperName(t: type | dict | Requirement):
+    if t == Requirement or isinstance(t, Requirement): return "object"
+    
     if t == str: return "string"
     if t == int: return "integer"
     if t == float: return "number"
