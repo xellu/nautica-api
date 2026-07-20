@@ -80,7 +80,7 @@ class RouteManager:
         """
         
         for field in [body or {}, headers or {}, cookies or {}, query or {}]:
-            for v in field.values():
+            for v in field.values():                    
                 if not (isinstance(v, type) or isinstance(v, Requirements.Requirement) or isinstance(v, dict)): raise TypeError(f"Context builder only accepts types, dicts and Requirements")
         
         for v in (files or {}).values():
@@ -92,7 +92,7 @@ class RouteManager:
                 headers=headers,
                 cookies=cookies,
                 query=query,
-                files = files
+                files=files
             )
             return func
     

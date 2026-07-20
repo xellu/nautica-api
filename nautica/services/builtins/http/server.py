@@ -1,7 +1,7 @@
 from ....models.Service import Service
 from ....manager import Config, Logger
 
-from .middleware import Middleware
+from .middleware import Middleware, RequestContext 
 from ....models.Http import ErrorReply
 from ....ext.StatusCodes import NOT_FOUND, METHOD_NOT_ALLOWED, BAD_REQUEST, INTERNAL_SERVER_ERROR
 from ....ext.Path import getRoot
@@ -130,6 +130,8 @@ class HTTPServer(Service):
         )
         
     async def handle_error(self, request: Request, exc: HTTPException):
+        ctx = RequestContext(request)
+        Middleware.log_response(ctx, exc.status_code)
         return Middleware.constructResponse(
             ErrorReply(exc.status_code, details={"exception": str(exc)}).toReply(), exc.status_code
         )        

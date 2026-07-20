@@ -1,4 +1,5 @@
 import re
+from typing import Generator
 from starlette.datastructures import UploadFile
 
 class Requirement:
@@ -229,8 +230,96 @@ class ListOf(Requirement):
         return True
         
     def __str__(self):
-        return f"listOf({typeToString(self.obj)}{', min='+str(self.min_length) if self.min_length else ''}{', max='+str(self.max_length) if self.max_length else ''})"
+        return f"{typeToString(self.obj)}[{str(self.min_length)+".." if self.min_length else ('0..' if self.max_length else '')}{str(self.max_length) if self.max_length else ('inf' if self.min_length else '')}]"
+
+class Nested(Requirement):
+    def __init__(self, schema: dict[str, type | dict | Requirement]):
+        self.schema = schema or {}
+   
+    def isValidExt(self, content, coerce: bool = False, prefix: str = "") -> Generator[tuple[bool, str | None, dict | None]]: 
+        """WILL MUTATE CONTENT IF COERCE IS TRUE"""
+
+        if not isinstance(content, dict):
+            yield False, f"Expected a dict, got '{type(content).__name__}'", None
+            return
+
+        for k, v in self.schema.items():
+            # key not in content
+            if k not in content.keys() and not isinstance(v, Optional):
+                yield False, f"Key '{prefix}{k}' is required but was not provided", None
+                continue
+
+            # invalid requirement
+            if isinstance(v, Requirement):
+                if not v.isValid(content[k]): yield False, f"Key '{prefix}{k}' does not match expression{' '+str(v) if v else ''}", None
+                continue
+            
+            # nested schema
+            if isinstance(v, dict): 
+                ok, error, _ = Nested(v).isValidExt(content[k], coerce, f"{prefix}{k}.")
+                if not ok: yield False, error, None
+                continue
+
+            # regular type
+            if not coerce:
+                # invalid data type
+                if not isinstance(content[k], v):
+                    yield False, f"Key '{prefix}{k}' has invalid value", None
+                    continue
+            else:
+                try:
+                    if v is bool:
+                        if str(content.get(k)).lower() not in ("true", "false", "1", "0"):
+                            yield False, f"Key '{prefix}{k}' has to match '{typeToString(v)}', got unconvertible value '{content[k]}'", None
+                            continue
+                        content[k] = str(content[k]).lower() in ["true", "1"]
+                    else:
+                        content[k] = v(content[k])
+                except (ValueError, TypeError):
+                    yield False, f"Key '{prefix}{k}' has to match '{typeToString(v)}', got unconvertible value '{content[k]}'", None
+                    continue
+                else:
+                    content[k] = v(content[k])
+
+        yield True, None, content
     
+    def isValid(self, content):
+       ok = True
+       for k, _, _ in self.isValidExt(content): 
+           if not k: ok = False
+
+       return ok
+
+    def __str__(self):
+        return typeToString(self.schema)
+
+    def toComponent(self):
+        return dictToComponent(self.schema)
+
+class Optional(Requirement):
+    def __init__(self, value: type | dict | Requirement):
+        self.value = Nested(value) if isinstance(value, dict) else value
+
+    def isValid(self, content):
+        print(f"{content=}")
+        if not content: return True
+
+        if isinstance(self.value, Requirement):
+            return self.value.isValid(content)
+        
+        return isinstance(content, self.value)
+
+    def toComponent(self):
+        if isinstance(self.value, Requirement):
+            return self.value.toComponent()
+        
+        return {"type": typeToProperName(self.value)}
+    
+    def __str__(self):
+        return f"{typeToString(self.value)}?"
+
+#------
+
 class RequirementResponse:
     def __init__(self, ok: bool, headers: dict = None, cookies: dict = None, body: dict = None, query: dict = None, files: dict = None, missingData: dict | None = None):
         self.ok = ok
@@ -241,7 +330,9 @@ class RequirementResponse:
         self.body = body or {}
         self.query = query or {}
         self.files = files or {}
-        
+
+#helpers-------------
+
 def typeToString(v):
     if isinstance(v, dict):
         nested = []

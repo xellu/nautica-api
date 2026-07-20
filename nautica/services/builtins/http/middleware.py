@@ -1,10 +1,10 @@
 from ....ext.Util import maybeAwait
 from ....ext.StatusCodes import *
 from ....models.Http import PreFlightRouteData, RequestContext, Reply, ErrorReply, InFlightRouteData, ReplyModel
-from ....models.Requirements import RequirementResponse, typeToString
+from ....models.Requirements import RequirementResponse, typeToString, Requirement
 from ....services import Services
 from ....manager import Config, Logger
-from .requirements import RequirementParser, Requirement
+from .requirements import RequirementParser
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, FileResponse, HTMLResponse, RedirectResponse, StreamingResponse
@@ -146,7 +146,8 @@ class Middleware:
             Logger.trace(e)
             raise ErrorReply(INTERNAL_SERVER_ERROR, "Failed to process your request", details={"exception": str(e)})
 
-    def log_response(self, ctx: RequestContext, status_code: int = None):
+    @staticmethod
+    def log_response(ctx: RequestContext, status_code: int = None):
         status = status_code or ctx.response.status_code
         
         if not Config("nautica")["http.logRequests"] and not isClientError(status) and not isServerError(status):
