@@ -234,7 +234,7 @@ class ListOf(Requirement):
 
 class Nested(Requirement):
     def __init__(self, schema: dict[str, type | dict | Requirement]):
-        self.schema = schema or {}
+        self.schema = normalizeSchema(schema)
    
     def isValidExt(self, content, coerce: bool = False, prefix: str = "") -> Generator[tuple[bool, str | None, dict | None]]: 
         """WILL MUTATE CONTENT IF COERCE IS TRUE"""
@@ -245,7 +245,9 @@ class Nested(Requirement):
 
         for k, v in self.schema.items():
             # key not in content
-            if k not in content.keys() and not isinstance(v, Optional):
+            if k not in content.keys():
+                if isinstance(v, Optional) and v.isValid(content.get(k)):
+                    continue
                 yield False, f"Key '{prefix}{k}' is required but was not provided", None
                 continue
 
@@ -301,8 +303,7 @@ class Optional(Requirement):
         self.value = Nested(value) if isinstance(value, dict) else value
 
     def isValid(self, content):
-        print(f"{content=}")
-        if not content: return True
+        if content is None: return True
 
         if isinstance(self.value, Requirement):
             return self.value.isValid(content)
@@ -342,6 +343,18 @@ def typeToString(v):
     
     return f"typeOf({v.__name__})" if isinstance(v, type) else str(v)
 
+def normalizeSchema(schema: dict) -> dict:
+    """Turns '{key}?' entries into '{key}: Optional(value)' entries."""
+    normalized = {}
+    for k, v in (schema or {}).items():
+        if isinstance(k, str) and k.endswith("?"):
+            k = k[:-1]
+            if not isinstance(v, Optional):
+                v = Optional(v)
+        normalized[k] = v
+    return normalized
+
+
 #openapi bullshi
 def typeToProperName(t: type | dict | Requirement):
     if t == Requirement or isinstance(t, Requirement): return "object"
@@ -370,9 +383,10 @@ def serializeIntoComponent(obj: type | dict | Requirement) -> dict:
     return {"type": typeToProperName(obj)}
 
 def dictToComponent(d: dict[str, dict | type]) -> dict:
+    d = normalizeSchema(d)
     comp = {
         "type": "object",
-        "required": list(d.keys()),
+        "required": [k for k, v in d.items() if not isinstance(v, Optional)],
         "properties": {}
     }
 
