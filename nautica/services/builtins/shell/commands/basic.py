@@ -84,11 +84,11 @@ def manual(command: str = None):
     )
 )
 def useGui(value: bool):    
-    if value == Config("nautica")["shell.gui"]:
+    if value == Config("shell")["gui.enabled"]:
         Logger.error(f"Already selected")
         return
 
-    Config("nautica")["shell.gui"] = value
+    Config("shell")["gui.enabled"] = value
     Logger.ok(f"Switched to {'GUI' if value else 'Terminal'}, restart for changes to take effect.")
   
 @RegisterCommand(

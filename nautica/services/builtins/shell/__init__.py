@@ -19,20 +19,15 @@ class Shell(Service):
         }
         
     def onInstall(self):
-        Config.Update("nautica",
+        Config.New("shell",
             ConfigBuilder()
-                .add("shell.systemdMode", False, comment="Disables console input, to work as a systemd service")
-                .add("shell.gui", False, comment="Whether to use textual TUI renderer")
-                .add("shell.guiTheme", "frost", comment="Available themes are: frost (default), catppuccin, nord, gruvbox, tokyo-night, textual-dark, solarized-light, atom-one-dark, atom-one-light")
-
-                .build()
-        )
-        
-        Config.New("shell-gui",
-            ConfigBuilder()
-                .add("home.logScroll", True)
-                .add("home.threadList", True)
+                .add("systemdMode", False, comment="Disables console input, to work as a systemd service")
                 
+                .add("gui.enabled", False, comment="Whether to use textual TUI renderer")
+                .add("gui.theme", "frost", comment="Available themes are: frost (default), catppuccin, nord, gruvbox, tokyo-night, textual-dark, solarized-light, atom-one-dark, atom-one-light")
+                .add("gui.home.logScroll", True)
+                .add("gui.home.threadList", True)
+
                 .build()
         )
         
@@ -44,10 +39,10 @@ class Shell(Service):
         #import builtin commands
         self.should_exit = False
             
-        if Config("nautica")["shell.gui"] and not Config("nautica")["shell.systemdMode"]:
+        if Config("shell")["gui.enabled"] and not Config("shell")["systemdMode"]:
             threading.Thread(target=self._run_gui).start()
         else:
-            if Config("nautica")["shell.systemdMode"]: Logger.warn("Shell GUI is not available when running in systemd mode")
+            if Config("shell")["systemdMode"]: Logger.warn("Shell GUI is not available when running in systemd mode")
             
             #                           dont change ---v
             threading.Thread(target=self._run, daemon=True).start()
@@ -124,7 +119,7 @@ class Shell(Service):
     
     async def loop(self):
         # Logger.ok("Shell running")
-        systemd = Config("nautica")("shell.systemdMode")
+        systemd = Config("shell")("systemdMode")
         self._loop = asyncio.get_event_loop()
         
         while True:

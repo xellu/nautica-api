@@ -66,14 +66,14 @@ class HTTPServer(Service):
         )
         
         #cors middleware
-        if Config("nautica")["http.cors.enabled"]:
+        if Config("http")["cors.enabled"]:
             self.app.add_middleware(
                 CORSMiddleware,
-                    allow_origins = Config("nautica")["http.cors.origins"],
-                    allow_methods = Config("nautica")["http.cors.methods"],
-                    allow_headers = Config("nautica")["http.cors.headers"],
-                    allow_credentials = Config("nautica")["http.cors.credentials"],
-                    expose_headers = Config("nautica")["http.cors.exposeHeaders"]
+                    allow_origins = Config("http")["cors.origins"],
+                    allow_methods = Config("http")["cors.methods"],
+                    allow_headers = Config("http")["cors.headers"],
+                    allow_credentials = Config("http")["cors.credentials"],
+                    expose_headers = Config("http")["cors.exposeHeaders"]
             )
         
         self.thread = t = threading.Thread(target=self._run)
@@ -84,15 +84,15 @@ class HTTPServer(Service):
             self.server.should_exit = True
 
     def _run(self):
-        host = Config("nautica")["http.host"]
-        port = Config("nautica")["http.port"]
+        host = Config("http")["host"]
+        port = Config("http")["port"]
         config = uvicorn.Config(self.app, host=host, port=port, log_config=None)
         self.server = uvicorn.Server(config)
         self.server.run()
         
     @asynccontextmanager
     async def lifespan(self, app):
-        Logger.ok(f"HTTP Server listening on {Config('nautica')['http.host']}:{Config('nautica')['http.port']}")
+        Logger.ok(f"HTTP Server listening on {Config('http')['host']}:{Config('http')['port']}")
         yield
 
     def transformRoutes(self):
@@ -105,9 +105,9 @@ class HTTPServer(Service):
             )
             
         #static routes
-        if Config("nautica")["http.static.enabled"]:
+        if Config("http")["static.enabled"]:
             out.append(
-                Mount(Config("nautica")["http.static.endpoint"], app=StaticFiles(directory=getRoot(Config("nautica")["http.static.directory"])))
+                Mount(Config("http")["static.endpoint"], app=StaticFiles(directory=getRoot(Config("http")["static.directory"])))
             )
             Logger.ok("Enabled static directory")
         

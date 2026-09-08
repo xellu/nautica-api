@@ -150,7 +150,7 @@ class Middleware:
     def log_response(ctx: RequestContext, status_code: int = None):
         status = status_code or ctx.response.status_code
         
-        if not Config("nautica")["http.logRequests"] and not isClientError(status) and not isServerError(status):
+        if not Config("http")["request.logSuccessful"] and not isClientError(status) and not isServerError(status):
             return
         
         log_msg = f"{ctx.clientIp}: {ctx.request.method.upper()} -> {ctx.url.path} ({status} {getMessage(status)})"
@@ -193,8 +193,8 @@ class Middleware:
                 #---------
             
             #get real ip
-            if Config("nautica")["http.realIPHeader"]:
-                ctx.clientIp = request.headers.get(Config("nautica")["http.realIPHeader"])
+            if Config("http")["request.realIPHeader"]:
+                ctx.clientIp = request.headers.get(Config("http")["request.realIPHeader"])
     
             #run before request handlers
             for handler in route.getBeforeHandlers():

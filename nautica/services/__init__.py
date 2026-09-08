@@ -82,6 +82,7 @@ class ServiceRegistryManager:
                 init = os.path.join(full_path, "__init__.py")
                 if not os.path.exists(init): continue
                 importModule(init, name=f"plugins.{f}")
+                
             elif f.endswith(".py"):
                 importModule(full_path, name=f"plugins.{os.path.splitext(f)[0]}")
             else:
