@@ -41,7 +41,7 @@ class HTTPServer(Service):
         
         @RegisterCommand("lshttp", "Lists all HTTP Endpoints")
         def list_http_endpoints():
-            for r in self.router.routes:
+            for r in self.router.routes_path.values():
                 beforeCount = len(r.getBeforeHandlers() or [])
                 afterCount = len(r.getAfterHandlers() or [])
                 
@@ -99,7 +99,7 @@ class HTTPServer(Service):
         out = []
         
         #regular routes
-        for r in self.router.routes:
+        for r in self.router.routes_path.values():
             out.append(
                 Route(r.getPath(), r.getFunc(), methods=[r.getMethod()])
             )

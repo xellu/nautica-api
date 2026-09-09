@@ -73,7 +73,7 @@ class OpenAPIGenerator(Service):
         }
         
         router: HTTPRouter = Services.get("HTTPRouter")
-        for r in router.routes:
+        for r in router.routes_path.values():
             if r.path not in docs["paths"].keys():
                 docs["paths"][r.path] = {}
                 

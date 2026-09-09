@@ -61,6 +61,6 @@ class HTTPRouter(Service):
             _HTTPRouter.temp = [] 
             imported += 1
         
-        Logger.info(f"Processed {imported} files, registered {len(self.routes)} endpoints")
+        Logger.info(f"Processed {imported} files, registered {len(self.routes_path.keys())} endpoints")
         
 Service.Export(HTTPRouter, srcDir = "http", depends_on=["HTTPConfig"])
