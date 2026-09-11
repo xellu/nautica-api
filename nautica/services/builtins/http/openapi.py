@@ -7,6 +7,7 @@ from ....ext.StatusCodes import getMessage
 from ....models.Http import RouteRequirements, ErrorReply
 from ....models.Requirements import serializeIntoComponent, dictToComponent
 
+import os
 import yaml
 
 class OpenAPIGenerator(Service):
@@ -39,7 +40,13 @@ class OpenAPIGenerator(Service):
         @RegisterCommand("oapidocs", description="Generates OpenAPI Documentation and saves it")
         async def mk_docs():
             docs = self.createDocs()
-            with open("openapi.yaml", "w") as f:
+            cfg_path = getRoot(Config("http")["openapi.path"])
+            
+            path = cfg_path \
+                if os.path.exists(cfg_path) and os.path.isfile(cfg_path) \
+                else "openapi.yaml"
+ 
+            with open(path, "w") as f:
                 f.write(
                     yaml.dump(unwrapToml(docs), sort_keys=False, allow_unicode=True)
                 )
@@ -47,7 +54,7 @@ class OpenAPIGenerator(Service):
             Logger.ok("Docs saved to 'openapi.yaml'")
         
     def onStart(self, registry):
-        if not Config("nautica")["http.docs"]:
+        if not Config("http")["openapi.enabled"]:
             return
         
         self.createDocs()
@@ -66,7 +73,7 @@ class OpenAPIGenerator(Service):
         }
         
         router: HTTPRouter = Services.get("HTTPRouter")
-        for r in router.routes:
+        for r in router.routes_path.values():
             if r.path not in docs["paths"].keys():
                 docs["paths"][r.path] = {}
                 

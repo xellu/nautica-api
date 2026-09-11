@@ -4,6 +4,7 @@ import os
 from colorama import Fore
 
 from ..ext.Static import banner, GitIgnore, ProjectExample
+from ..ext.LLMs import LLMS, AGENTS
 from ..ext.Util import walkPath
 from ..ext.Path import setRoot, getRoot
 
@@ -36,8 +37,13 @@ def _create(name, demo: bool = False):
     for f in [".logs", "config", "plugins", "src/http", "src/lib"]:
         os.makedirs(getRoot(f), exist_ok=True)
 
-    with open(getRoot(".gitignore"), "w") as f: f.write(GitIgnore)
-    with open(getRoot("src/http/+root.py"), "w") as f: f.write(ProjectExample if demo else "")
+    with open(getRoot(".gitignore"), "w", encoding="utf-8") as f: f.write(GitIgnore)
+
+    with open(getRoot("DOCS.md"), "w", encoding="utf-8") as f: f.write(LLMS)
+    with open(getRoot("AGENTS.md"), "w", encoding="utf-8") as f: f.write(AGENTS)
+    with open(getRoot("CLAUDE.md"), "w") as f: f.write("@AGENTS.md")
+    if demo: 
+        with open(getRoot("src/http/+root.py"), "w", encoding="utf-8") as f: f.write(ProjectExample)
 
     Logger.ok("Created project tree")
 

@@ -16,6 +16,10 @@ class System(Service):
                 .add("services.shell", True, "Enables the interactive shell") #make sure services is the 2nd thing in the config
                 .build()
         )
+
+        Config.New("http",
+            ConfigBuilder().build()
+        )
         
         #package-lock
         if not Config.Exists("lock"):

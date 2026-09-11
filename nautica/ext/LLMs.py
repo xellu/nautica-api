@@ -1,0 +1,1614 @@
+
+AGENTS = """
+# Nautica Project
+
+This project is built on Nautica V3 (`napi`/`nautica`), a Python backend framework
+with a service registry, file-based HTTP/WebSocket routing, and a plugin system.
+
+Full API reference is in `DOCS.md` - consult it before
+writing code that touches routing, validation, services, or config. Don't guess
+at the API surface; it's non-standard (not Flask/FastAPI conventions).
+
+## Setup & Run
+- Install deps: `nautica install`
+- Run the project: `nautica run`
+- Install a package: `nautica install <package>` (e.g. `nauth`, `mongodb`)
+
+## Project Structure
+- `src/http/` - HTTP routes, file-based (path = file path, `+root.py` = index)
+- `src/ws/` - WebSocket routes, same convention
+- `plugins/` - services/packages, auto-imported on start
+- `config/` - TOML configs (one per service), `config.n3` at root for core settings
+- `.logs/` - runtime logs, gitignored
+
+## Key Conventions (easy to get wrong)
+- Raise `Error`, never `return` it: `raise Error(StatusCodes.NOT_FOUND, "msg")`
+- Validate input with `@HTTP.Require(...)`, not manual checks - invalid requests
+  never reach the handler (auto 422)
+- Route handlers take `ctx: Context` as the first arg (or no args at all)
+- Services need `Service.Export(MyClass)` at module level to be registered
+- Lifecycle order: `onInstall` -> `isEnabled` -> `onSetup` -> `onStart` -> `onClose`
+- Use `Config("id")["dotted.key"]` to read config, not raw TOML parsing
+
+"""
+
+LLMS = r"""
+# Nautica
+
+> Nautica V3 is a backend platform for Python. It gives you a managed runtime environment with a service registry, lifecycle system, CLI, and built-in tools, saving you time from putting your app together and giving you more time building it.
+
+## Installation
+
+Install using pip from PyPI:
+```bash
+pip install nautica
+```
+
+To create a new project:
+```bash
+nautica create my-project --demo
+cd my-project
+nautica install
+nautica run
+```
+Remove the `--demo` flag if you want just the project layout.
+
+---
+
+# CLI Reference
+
+`napi` is an alias for `nautica`, usable interchangeably.
+
+## Quick Start
+```bash
+nautica create my-project
+cd my-project
+nautica run
+```
+To set up an existing project:
+```bash
+cd my-project
+nautica install
+nautica run
+```
+
+## Commands
+
+### create
+Usage: `nautica create <name> [--demo]`
+
+Creates a new Nautica3 project in a new directory with the given name.
+
+Generated project tree:
+```
+new-project/
+├── src/
+│   └── http/ //feel free to delete if not needed
+├── plugins/
+├── config/
+├── .logs/
+├── config.n3
+├── package.n3
+└── .gitignore
+```
+After creating a project, `cd` into it and run `nautica run .` to start it. If ran with `--demo` flag, the HTTP server will be enabled automatically, and example routes will be created.
+
+### install
+Usage: `nautica install [package]` (or `nautica i [package]`)
+
+Installs a specified package from the package registry.
+
+OR (no argument): checks that all packages are installed, needed config files are present, runs `onInstall()` on all registered services and creates any missing configs.
+
+Should be ran after cloning an existing N3 project, or after adding new services.
+
+### uninstall
+Usage: `nautica uninstall <package>`
+
+Removes a specified package from the project.
+
+### run
+Usage: `nautica run [path]`
+
+Starts a Nautica3 project.
+
+## Package Commands
+
+### package create
+Usage: `nautica package create <name>`
+
+Creates an empty Nautica3 package.
+
+### package env
+Usage: `nautica package env`
+
+Creates a testing environment for your package (re-created if one already exists). The env (under `.testenv/`) is an empty nautica project under the hood - you can install dependencies, and more.
+
+### package envinstall
+Usage: `nautica package envinstall`
+
+Runs `nautica install` in the test environment.
+
+### package envclean
+
+Cleans up the environment by deleting logs and configs.
+
+### package test
+Usage: `nautica package test`
+
+Clones your package into `.testenv/plugins/` and starts the testing environment.
+
+### package publish
+Usage: `nautica package publish`
+
+Publishes your package to the Nautica Package Registry (napm.xellu.xyz). You may be prompted to log in. Don't forget to change the package version before publishing - duplicates aren't allowed.
+
+### package registry
+Usage: `nautica package registry [url]`
+
+If a URL is provided, switches to a different package registry. Otherwise lists all available registries. When you switch, package publishing and downloading will only be done from that specific registry.
+
+---
+
+# Service Registry
+
+A `Service` is a building block in Nautica. It's a component that plugs into Nautica's runtime, able to expose functionality to other services, start background tasks, define a config, and clean up after itself.
+
+```py
+from nautica import Service, Logger
+
+class MyService(Service):
+    def onStart(self, registry):
+        Logger.ok("MyService started!")
+
+Service.Export(MyService)
+```
+
+## Lifecycle Hooks
+| Method | When it's called | Use for |
+| --- | --- | --- |
+| `onInstall()` | On `nautica install`, and before `onStart` | For setting up configs, directories |
+| `onSetup(registry)` | On `nautica run`, after dependencies are ready | For connecting to databases or other setup |
+| `onStart(registry)` | After `onSetup` | For starting servers, threads, etc. |
+| `onClose(reason)` | On shutdown | Clean up resources, stop threads |
+| `isEnabled()` | Before `onSetup` | Optional, return a boolean indicating if the service is enabled |
+
+By default, `isEnabled()` automatically registers a toggle in `config.n3` under `services.<servicename>` and reads from it. Override to add custom logic, or call `super().isEnabled()` to combine both.
+
+## Accessing Other Services
+The `registry` argument in `onStart` & `onSetup` gives access to other running services. Use `Services.get(str)`/`Services[str]` from anywhere outside of `onStart`/`onSetup`:
+
+```py
+from nautica import Service, Services
+
+class MyService(Service):
+    def onStart(self, registry):
+        router = registry.Get("HTTPRouter")  # preferred inside onStart
+
+    def some_method(self):
+        router = Services.Get("HTTPRouter")  # use this outside of onStart
+```
+
+## Exporting
+A service has to be exported to be registered with the runtime, at module level, after the class definition:
+```py
+Service.Export(MyService)
+```
+
+### Creating a source directory
+If your service needs its own folder under `src/`, pass `srcDir`:
+```py
+Service.Export(MyService, srcDir="myservice") # creates folder "src/myservice"
+```
+
+### Adding Dependencies
+If your service depends on another, use `depends_on` to make sure it starts first. Nautica will always boot dependencies before your service:
+```py
+Service.Export(MyService, depends_on=["HTTPRouter"]) # HTTP Router will always be available
+```
+Add `?` at the end to make the dependency optional:
+```py
+Service.Export(MyService, depends_on=["HTTPRouter?"]) # Will not crash on start if the dependency is missing
+```
+Use `:after` when you need a dependency to start after (not before) your service:
+```py
+Service.Export(MyService, depends_on=["HTTPServer:after"])
+# Makes sure HTTP Server starts after your service
+
+Service.Export(MyService, depends_on=["HTTPServer:after?"]) # This works too
+```
+
+## Plugins
+Services placed in the `plugins/` directory are automatically imported when the project starts. Create a `.py` file, define your service, and call `Service.Export()`. To install plugins from the Package Registry, use `nautica install <package name>`.
+
+## Full Example
+```py
+from nautica import Service, Logger, Config, ConfigBuilder
+import threading
+
+class MyService(Service):
+    def __init__(self):
+        super().__init__()
+        self.thread = None
+        self.running = False
+
+    def onInstall(self):
+        Config.New("myservice",
+            ConfigBuilder()
+                .add("interval", 5, comment="Task interval in seconds")
+                .build()
+        )
+
+    def onSetup(self, registry):
+        self.thread = threading.Thread(target=self._run, daemon=True)
+
+    def onStart(self, registry):
+        self.running = True
+        self.thread.start()
+
+        Logger.ok("MyService started")
+
+    def onClose(self, reason):
+        self.running = False
+        Logger.info("MyService stopped")
+
+    def _run(self):
+        import time
+        while self.running:
+            Logger.info("MyService tick")
+            time.sleep(Config("myservice")["interval"])
+
+Service.Export(MyService)
+```
+
+---
+
+# Builtin Services: HTTP
+
+Nautica3's HTTP API is provided by `napi.http`. It is built on top of Starlette and Uvicorn, and uses a file-based routing convention inspired by SvelteKit. Route paths are derived from the file's location under `src/http/`, so you don't need to declare them manually.
+
+```py
+from napi.http import HTTP, Context, Reply, Error, Require, ReplyModel, StatusCodes
+```
+
+## Routing
+
+### File-based Routes
+Routes are defined in `.py` files under `src/http/`. The URL path is derived from the file path:
+| File | Path |
+| --- | --- |
+| `src/http/users.py` | `/users/<function name>` |
+| `src/http/api/v1/auth.py` | `/api/v1/auth/<function name>` |
+| `src/http/api/v1/auth/+root.py` | `/api/v1/auth/<function name>` |
+
+`+root.py` acts as the index file for a directory.
+
+### Defining a Route
+Use `@HTTP.<METHOD>()` to mark a function as a route handler. The function name becomes the final path segment, overridable by passing a name instead:
+
+```py
+@HTTP.GET()
+async def users(ctx: Context):
+    return Reply(users=[])
+
+#path: /users
+```
+
+```py
+@HTTP.GET("all-users")
+async def get_users(ctx: Context):
+    return Reply(users=[])
+
+#path: /all-users
+```
+
+### Available Methods
+```py
+@HTTP.GET(...)
+@HTTP.POST(...)
+@HTTP.PUT(...)
+@HTTP.DELETE(...)
+@HTTP.PATCH(...)
+@HTTP.HEAD(...)
+@HTTP.CONNECT(...)
+@HTTP.TRACE(...)
+```
+
+### Path Parameters
+Nautica3 uses Starlette's path parameters:
+```py
+@HTTP.GET("/{user_id:str}")
+async def get_user(ctx: Context):
+    user_id = ctx.params["user_id"]
+    return Reply(id=user_id)
+```
+
+## Request Context
+Every route handler receives a `Context` object as its first argument (unless the handler takes no arguments at all).
+```py
+@HTTP.GET()
+async def example(ctx: Context): ...
+```
+
+### Context Fields
+| Field | Type | Description |
+| --- | --- | --- |
+| `ctx.body` | `dict` | JSON request body |
+| `ctx.query` | `dict` | URL query parameters |
+| `ctx.headers` | `dict` | Request headers |
+| `ctx.cookies` | `dict` | Request cookies |
+| `ctx.files` | `dict[str, AttachedFile]` | Uploaded files |
+| `ctx.params` | `dict` | Path parameters |
+| `ctx.clientIp` | `str \| None` | Client IP address |
+| `ctx.url` | `URL` | Full request URL |
+| `ctx.request` | `Request` | Original Starlette request |
+
+## Replies
+Use `Reply` to return a response from a route handler.
+
+### JSON Object
+Pass keyword arguments to return a JSON object:
+```py
+return Reply(ok=True, user="Martin")
+# {"ok": true, "user": "Martin"}
+```
+
+### JSON Array
+Pass positional arguments into `Reply.list` to return a JSON array:
+```py
+return Reply.list("Martin", "Lucy")
+# OR
+return Reply("Martin", "Lucy").asList()
+
+#Outputs: ["Martin", "Lucy"]
+```
+Non-empty list replies will get serialized even without `.asList()`. Recommended to use it anyway, as empty lists will get serialized into a `dict` instead of a `list`.
+
+### With a Status Code
+Return a tuple of `(Reply, status_code)`:
+```py
+return Reply(), 201
+```
+
+### Setting Headers
+```python
+r = Reply(ok=True)
+r.SetHeader({"X-Custom-Header": "value"})
+return r
+```
+
+### Setting Cookies
+```python
+r = Reply(ok=True)
+r.SetCookie("session") \
+    .value("abc123") \
+    .maxAge(60 * 60 * 24) \
+    .httpOnly(True) \
+    .secure(True) \
+    .build()
+return r
+```
+`.build()` writes the cookie onto the `Reply` and returns it.
+
+### Additional Reply Formats
+Starlette's responses are also available (losing response model validation and access to `SetHeader`, `SetCookie`, etc.):
+- `Reply.plainText` -> PlainTextResponse
+- `Reply.html` -> HTMLResponse
+- `Reply.stream` -> StreamingResponse
+- `Reply.file` -> FileResponse
+- `Reply.redirect` -> RedirectResponse
+
+## Errors
+Raise `Error` to return an error response. It can be raised anywhere in the handler, including nested functions. Do not return `Error`, raise instead.
+
+```py
+from napi.http import Error, StatusCodes
+
+@HTTP.GET()
+async def get_user(ctx: Context):
+    raise Error(StatusCodes.NOT_FOUND, "User not found")
+```
+
+```py
+Error(
+    status_code,          # HTTP status code, default 400
+    errorMessage=None,    # Message, falls back to standard HTTP message
+    details=None          # Extra context, dict or str
+)
+```
+
+```py
+raise Error(StatusCodes.CONFLICT, "Username taken", details={"field": "username"})
+# Response: {"error": "Username taken", "details": {"field": "username"}}
+```
+
+## Requirement Validation
+Use `@HTTP.Require()` to declare the expected shape of an incoming request. If the request does not match, Nautica3 automatically returns a `422 Unprocessable Content` with details about what was missing or invalid, and your handler code is never reached.
+
+```python
+@HTTP.POST()
+@HTTP.Require(
+    body = {"username": str, "age": int},
+    query = {"format": Require.AnyOf("json", "csv")},
+    headers = {"X-Api-Key": str},
+    cookies = {"session": str}
+)
+async def example(ctx: Context):
+    ...
+```
+Schemas can be nested.
+
+### Optional requirements
+Use `?` at the end of a key to define an optional parameter:
+```py
+@HTTP.Require(
+    ...
+    query = {..., "limit?": int}, ...
+)
+async def example(ctx: Context):
+    limit = ctx.query["limit"] # Integer or 'None'
+```
+Such parameters are always either the type you define, or None, if it was not provided.
+
+### Validators
+Instead of a plain type, use a `Requirement` validator as the value:
+- `Require.AnyOf(*options)` - value must be one of the provided options: `Require.AnyOf("list", "dict")`
+- `Require.AnyTypeOf(*types)` - value must match any of the provided types: `Require.AnyTypeOf(str, int)`
+- `Require.ExactMatch(match)` - value must equal the provided value exactly: `Require.ExactMatch("v3")`
+- `Require.RegExMatch(pattern)` - value must match the provided regex pattern: `Require.RegExMatch(r"^[a-zA-Z0-9_]{3,20}$")`
+
+(Full validator reference below under "Requirement Validators".)
+
+### File Uploads
+Use `Require.File` in the `files` field to handle multipart file uploads. Only `Require.File` can be used in `files`, and `Require.File` can only be used in `files`.
+
+```python
+@HTTP.POST()
+@HTTP.Require(
+    files = {
+        "avatar": Require.File(
+            max_size = Require.File.MB(2),
+            mime = ["image/png", "image/jpeg"]
+        )
+    }
+)
+async def upload_avatar(ctx: Context):
+    file = ctx.files["avatar"]
+    await file.save(f"uploads/{file.filename}")
+    return Reply(ok=True)
+```
+
+`Require.File` Options:
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `max_size` | `int` | Maximum file size in bytes |
+| `mime` | `list[str]` | Allowed MIME types |
+
+Size Helpers:
+```python
+from napi.http.Require import File
+
+File.KB(128)   # 128 * 1024 bytes
+File.MB(2)     # 2 * 1024 * 1024 bytes
+File.GB(1)     # 1 * 1024 * 1024 * 1024 bytes
+```
+
+`AttachedFile`:
+| Field / Method | Description |
+| --- | --- |
+| `file.filename` | Original filename |
+| `file.mime` | MIME type |
+| `file.size` | File size in bytes (updated on read) |
+| `await file.read()` | Returns file contents as `bytes` |
+| `await file.save(path)` | Saves file to the given path |
+
+## Response Validation
+Like how `@HTTP.Require` checks what's coming in, `@HTTP.Responses(...)` does the same for outgoing traffic.
+
+```py
+@HTTP.GET()
+@HTTP.Responses(
+    ReplyModel(200, {"username": str, "age": int}),
+    Error(StatusCodes.UNAUTHORIZED) # or 401
+)
+def get_user(ctx: Context):
+    ...
+```
+This allows you to define all possible responses with the corresponding status code.
+
+By enabling `strict` mode:
+```py
+@HTTP.GET()
+@HTTP.Responses(
+    ...,
+    strict = True
+)
+...
+```
+You'll enforce the output schema - if a malformed response is detected, the request will fail. Otherwise reply models are used for OpenAPI generation only. `dict`s, `type`s and `Requirement`s are all valid shapes for the ReplyModel.
+
+## Before / After Hooks
+Run code before or after a specific route handler using `@HTTP.Before` and `@HTTP.After`. These are per-route only.
+
+### Before
+If the before handler returns a value, it is sent as the response immediately and the main handler is skipped:
+```python
+def check_auth(ctx: Context):
+    if not ctx.cookies.get("session"):
+        return Reply(error="Unauthorized"), 401
+
+@HTTP.GET()
+@HTTP.Before(check_auth)
+async def protected(ctx: Context):
+    return Reply(ok=True)
+```
+
+### After
+After handlers run following the main handler. Return value is ignored:
+```python
+def log_request(ctx: Context):
+    print(f"Request from {ctx.clientIp}")
+
+@HTTP.GET()
+@HTTP.After(log_request)
+async def tracked(ctx: Context):
+    return Reply(ok=True)
+```
+
+## Status Codes
+`StatusCodes` exposes all standard HTTP status codes as named constants:
+```python
+from napi.http import StatusCodes
+
+StatusCodes.OK                    # 200
+StatusCodes.CREATED               # 201
+StatusCodes.BAD_REQUEST           # 400
+StatusCodes.UNAUTHORIZED          # 401
+StatusCodes.NOT_FOUND             # 404
+StatusCodes.CONFLICT              # 409
+StatusCodes.INTERNAL_SERVER_ERROR # 500
+```
+Helper functions:
+```python
+StatusCodes.isSuccess(200)      # True
+StatusCodes.isRedirect(301)     # True
+StatusCodes.isClientError(404)  # True
+StatusCodes.isServerError(500)  # True
+StatusCodes.getMessage(404)     # "Not Found"
+```
+
+## CORS
+Cross-Origin Resource Sharing is configured per-project in `config/http.toml`, under the `[cors]` table. It is disabled by default.
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `cors.enabled` | `false` | Enable CORS handling |
+| `cors.origins` | `["*"]` | Allowed origins (`Access-Control-Allow-Origin`); empty list blocks all origins |
+| `cors.methods` | `["*"]` | Allowed methods (`Access-Control-Request-Method`) |
+| `cors.headers` | `["*"]` | Allowed headers (`Access-Control-Request-Headers`) |
+| `cors.exposeHeaders` | `[]` | Exposed headers |
+| `cors.credentials` | `false` | Allow cookies and `Authorization` headers on cross-origin requests |
+
+```toml
+[cors]
+enabled = true
+origins = ["https://example.com"]
+methods = ["GET", "POST"]
+headers = ["*"]
+exposeHeaders = []
+credentials = false
+```
+Per the CORS spec, `credentials = true` can't be combined with a wildcard (`"*"`) origin - set `cors.origins` to an explicit list when enabling credentials.
+
+## Full Example
+```python
+# file: src/http/api/v1/users.py
+
+from napi.http import HTTP, Context, Reply, Error, Require, StatusCodes
+
+USERS = {
+    "martin": {"age": 25, "role": "admin"},
+    "lucy":   {"age": 23, "role": "user"},
+}
+
+@HTTP.GET()
+@HTTP.Require(
+    query = {"format": Require.AnyOf("list", "dict")}
+)
+async def users(ctx: Context):
+    if ctx.query["format"] == "dict":
+        return Reply(**USERS)
+    return Reply(*[{"name": k, **v} for k, v in USERS.items()])
+
+
+@HTTP.GET("/{username:str}")
+@HTTP.Responses(
+    ReplyModel(200, {"age": int, "role": str}),
+    Error(StatusCodes.NOT_FOUND)
+)
+async def get_user(ctx: Context):
+    user = USERS.get(ctx.params["username"])
+    if not user:
+        raise Error(StatusCodes.NOT_FOUND, "User not found")
+    return Reply(**user)
+
+
+@HTTP.POST()
+@HTTP.Require(
+    body = {"name": str, "age": int}
+)
+async def create_user(ctx: Context):
+    name = ctx.body["name"]
+    if name in USERS:
+        raise Error(StatusCodes.CONFLICT, f"User '{name}' already exists")
+
+    USERS[name] = {"age": ctx.body["age"], "role": "user"}
+    return Reply(), StatusCodes.CREATED
+```
+
+---
+
+# Builtin Services: WebSockets
+
+The WebSocket API is provided by `napi.ws`. It is built on top of the HTTP API. Like HTTP API, it also runs on Starlette + Uvicorn, and similarly uses file-based routing, derived from file's location under `src/ws/`.
+
+```py
+from napi.ws import WS, Context, Error
+```
+Note that `Require` and `Reply` from HTTP API aren't available.
+
+## Routing
+### File-based Routes
+Routes are defined in `.py` files under `src/ws/`. The URL path is derived from the file path:
+| File | Path |
+| --- | --- |
+| `src/ws/users.py` | `/users` |
+| `src/ws/api/v1/auth.py` | `/api/v1/auth` |
+| `src/ws/api/v1/auth/+root.py` | `/api/v1/auth` |
+
+`+root.py` acts as the index file for a directory.
+
+### Defining an Endpoint
+Decorators such as `@WS.OnConnect()`, `@WS.OnDisconnect()` and `@WS.OnPacket(...)` are used to handle websocket connections; define at least one to create an endpoint.
+
+```py
+@WS.OnPacket("hello")
+async def on_hello(ctx: Context, data: any):
+    return "Hello World!" # This can be anything JSON-Serializable
+```
+This returns a structured packet, wrapping your response:
+```jsonc
+{
+    "id": "hello",
+    "data": "Hello World!" // From the return statement
+}
+```
+
+## Packet Structure
+```jsonc
+{
+    "id": "hello", // This is the identifier, which determines which handler gets called
+    "data": "Hello World!" // This is returned or passed onto your handler as "data" argument
+}
+```
+
+## WebSocketContext
+Every handler receives a `Context` object as its first argument. This context is unique for each connection, and persists between handlers.
+
+```py
+@WS.OnConnect()
+async def on_connection(ctx: Context):
+    ctx.hello = "Hello World!" # Set a value
+
+@WS.OnPacket("getHello")
+async def get_hello(ctx: Context, data: any):
+    return ctx.hello # This works, because Context persists across handlers
+```
+
+### Context Fields
+| Field | Type | Description |
+| --- | --- | --- |
+| `ctx.ws` | WebSocket | Starlette's WebSocket Object |
+| `ctx.clientIp` | Address | The client's host and port |
+| `ctx.send(data: dict)` | Method | sends raw JSON, not wrapped in a packet |
+| `ctx.close(code: int)` | Method | Closes the connection |
+
+You can define your own persistent fields using `__setattr__` and read with `__getattr__`, as shown above.
+
+## Errors
+To return an error, use the `Error` class from `napi.ws`:
+```py
+from napi.ws import WS, Context, Error
+
+@WS.OnPacket("evilHello")
+async def evil_hello(ctx: Context, data):
+    raise Error("This is an error!")
+```
+This returns a structured error packet:
+```json
+{
+    "id": "error",
+    "data": {
+        "details": "This is an error!"
+    }
+}
+```
+
+---
+
+# Builtin Services: Shell
+
+The built-in shell lets you interact with your running services through the terminal or TUI. You can register your own commands to expose functionality at runtime. Useful for admin tasks, debugging, or controlling your services without restarting.
+
+## Registering a Command
+Use `RegisterCommand` to define a new shell command. Import it from `nautica.services.builtins.shell.decorator`:
+```py
+from nautica.services.builtins.shell.decorator import RegisterCommand, CommandRequirements
+
+@RegisterCommand(
+    "greet",
+    "Prints a greeting message"
+)
+def greet():
+    return "Hello from MyService!"
+```
+Commands should be registered in `onStart()`:
+```py
+from nautica import Service
+from nautica.services.builtins.shell.decorator import RegisterCommand
+
+class MyService(Service):
+    def onStart(self):
+        from . import commands  # import your commands module here
+
+Service.Export(MyService)
+```
+Returning a string from a command prints it as an OK log. If you don't return anything, nothing is printed.
+
+## Arguments
+Use `CommandRequirements` to define expected arguments for a command:
+```py
+from nautica.services.builtins.shell.decorator import RegisterCommand, CommandRequirements
+
+@RegisterCommand(
+    "greet",
+    "Greets a user by name",
+    args = CommandRequirements(
+        args = {"name": str}
+    )
+)
+def greet(name: str):
+    return f"Hello, {name}!"
+```
+Arguments are passed positionally in the shell:
+```
+> greet Martin
+Hello, Martin!
+```
+
+### Supported Types
+| Type | Behavior |
+| --- | --- |
+| `str` | Passed as-is |
+| `int` | Coerced from string |
+| `float` | Coerced from string |
+| `bool` | Accepts `true/false`, `1/0`, `yes/no` |
+
+### Validators
+Use `Requirement` validators instead of plain types:
+```py
+from nautica.models.Requirements import AnyOf
+
+@RegisterCommand(
+    "setmode",
+    "Sets the service mode",
+    args = CommandRequirements(
+        args = {"mode": AnyOf("debug", "production")}
+    )
+)
+def setmode(mode: str):
+    return f"Mode set to {mode}"
+```
+```
+> setmode debug
+Mode set to debug
+
+> setmode invalid
+Command failed to execute: Argument <mode> does not match anyOf(debug, production)
+```
+
+## Flags
+Flags are optional boolean switches prefixed with `--`:
+```py
+@RegisterCommand(
+    "stop",
+    "Stops all services",
+    args = CommandRequirements(
+        flags = ["force"]
+    )
+)
+def stop(force: bool = False):
+    if force:
+        import os
+        os._exit(1)
+
+    from nautica import Services
+    Services.onClose("requested by user")
+```
+```
+> stop           # graceful shutdown
+> stop --force   # immediate exit
+```
+
+## Combining Arguments and Flags
+```py
+@RegisterCommand(
+    "reload",
+    "Reloads a service",
+    args = CommandRequirements(
+        args = {"service": str},
+        flags = ["verbose"]
+    )
+)
+def reload(service: str, verbose: bool = False):
+    if verbose:
+        Logger.info(f"Reloading {service}...")
+    return f"Reloaded {service}"
+```
+```
+> reload HTTPServer
+> reload HTTPServer --verbose
+```
+
+## Accessing Services
+Commands have access to the full runtime, so you can interact with any running service:
+```py
+from nautica import Services, Logger
+
+@RegisterCommand("status", "Shows service status")
+def status():
+    for s in Services.instances:
+        Logger.info(f"{s._getName()}: running")
+```
+
+## Full Example
+```py
+from nautica import Service, Logger, Config, Services
+from nautica.services.builtins.shell.decorator import RegisterCommand, CommandRequirements
+from nautica.models.Requirements import AnyOf
+
+class AdminService(Service):
+    def onStart(self):
+        @RegisterCommand(
+            "admin.status",
+            "Shows all running services"
+        )
+        def status():
+            for s in Services.instances:
+                Logger.info(f" * {s._getName()}")
+
+        @RegisterCommand(
+            "admin.setdebug",
+            "Toggles debug mode",
+            args = CommandRequirements(
+                args = {"value": bool}
+            )
+        )
+        def setdebug(value: bool):
+            Config("nautica")["nautica.debug"] = value
+            return f"Debug mode set to {value}"
+
+        @RegisterCommand(
+            "admin.loglevel",
+            "Sets the log level",
+            args = CommandRequirements(
+                args = {"level": AnyOf("info", "warn", "error", "debug")}
+            )
+        )
+        def setloglevel(level: str):
+            return f"Log level set to {level}"
+
+Service.Export(AdminService)
+```
+```
+> admin.status
+> admin.setdebug true
+> admin.loglevel warn
+```
+
+---
+
+# Config Manager
+
+The config manager uses TOML configuration files for your project and services.
+```py
+from nautica import Config, ConfigBuilder
+```
+
+## Built-in Configs
+Nautica creates two config files at the root of your project automatically:
+| File | ID | Description |
+| --- | --- | --- |
+| `config.n3` | `nautica` | Core Nautica settings |
+| `package-lock.n3` | `lock` | List of installed packages |
+| `project.n3` | `projectdev` | Config for package development |
+
+These are the only configs that live at the project root. All other configs are created under `config/`.
+
+## Reading Values
+Use dotted key paths to read values from a config:
+```py
+Config("http")["port"] # 8100
+Config("http")["request.includeSchema"] # True
+Config("nautica")["nautica.debug"]
+```
+This returns `None` if the key doesn't exist.
+
+## Writing Values
+```py
+Config("http")["port"] = 9000
+```
+Changes are saved automatically.
+
+## ConfigBuilder
+`ConfigBuilder` is used to define config keys with default values and optional comments:
+```py
+ConfigBuilder()
+    .add("key", default_value, comment="Optional comment")
+    .build()
+```
+Keys use dot notation to define nested TOML tables:
+```py
+ConfigBuilder()
+    .add("database.host", "127.0.0.1", comment="Database host")
+    .add("database.port", 5432)
+    .add("database.name", "mydb")
+    .build()
+```
+Turns into:
+```toml
+[database]
+host = "127.0.0.1" # Database host
+port = 5432
+name = "mydb"
+```
+
+## Creating a Config
+Services can register their own config files using `Config.New()`. This should be done in `onInstall()`:
+```py
+from nautica import Service, Config, ConfigBuilder
+
+class MyService(Service):
+    def onInstall(self):
+        Config.New("myservice",
+            ConfigBuilder()
+                .add("host", "127.0.0.1")
+                .add("port", 8200)
+                .build()
+        )
+```
+This creates `config/myservice.toml` with the defined keys and values. If the file already exists, missing keys are added without overwriting existing values.
+
+## Updating a Config
+Use `Config.Update()` to add keys to an existing config without replacing it. This is useful for built-in configs like `nautica` that multiple services contribute to:
+```py
+class MyService(Service):
+    def onInstall(self):
+        Config.Update("myservice",
+            ConfigBuilder()
+                .add("feature.enable", True, comment="Enable this feature")
+                .build()
+        )
+```
+Use `Config.New()` for your own config files, and `Config.Update()` when adding keys to an existing one like `nautica`.
+
+## Built-in Config Reference
+
+### nautica (config.n3)
+| Key | Default | Description |
+| --- | --- | --- |
+| `nautica.debug` | `true` | Enables debug mode and debug log output |
+| `services.http` | `false` | Enables the HTTP server |
+| `services.shell` | `true` | Enables the shell |
+
+### projectdev (project.n3)
+| Key | Default | Description |
+| --- | --- | --- |
+| `name` | `pwd` | Project name, `a-z0-9._-` |
+| `version` | `1.0.0` | Semantic Version |
+| `dependsOn` | `[]` | Dependency packages (names from registry) |
+| `pyPackages` | `[]` | PyPI dependencies (names from PyPI) |
+
+### http (config/http.toml, CORS section)
+| Key | Default | Description |
+| --- | --- | --- |
+| `cors.enabled` | `false` | Enable CORS handling |
+| `cors.origins` | `["*"]` | Allowed origins; empty list blocks all origins |
+| `cors.methods` | `["*"]` | Allowed methods |
+| `cors.headers` | `["*"]` | Allowed headers |
+| `cors.exposeHeaders` | `[]` | Exposed headers |
+| `cors.credentials` | `false` | Allow cookies and `Authorization` headers on cross-origin requests |
+
+---
+
+# Log Manager
+
+The built-in logger provides leveled, colored console output with automatic file writes and memory storage.
+```py
+from nautica import Logger
+```
+
+## Log Levels
+| Method | Level | Use for |
+| --- | --- | --- |
+| `Logger.info(msg)` | INFO | General information |
+| `Logger.ok(msg)` | OK | Successful operations |
+| `Logger.warn(msg)` | WARN | Non-critical issues |
+| `Logger.error(msg)` | ERROR | Errors that need attention |
+| `Logger.critical(msg)` | CRITICAL | Severe errors |
+| `Logger.debug(msg)` | DEBUG | Debug info, only shown when `nautica.debug` is `True` |
+
+```py
+Logger.info("Server is starting...")
+Logger.ok("Connected to database")
+Logger.warn("Config value missing, using default")
+Logger.error("Failed to load plugin")
+Logger.critical("Service failed to initialize")
+Logger.debug("Raw response: " + str(data))
+```
+
+## File Output
+Logs are automatically written to `.logs/` in your project directory. A new file is created each time the project starts, named by timestamp:
+```
+.logs/nautica_01_01_25__12_00_00.log
+```
+This directory is excluded from git by default in `.gitignore`.
+
+## Log Memory
+Nautica keeps the last 100 log entries in memory, accessible via `LogMemory`:
+```py
+from nautica import Logger
+from nautica.manager import LogMemory
+
+entries = LogMemory.Recall()      # all entries
+entries = LogMemory.Recall(10)    # last 10 entries
+```
+Each entry is a dict:
+```py
+{
+    "moduleName": {
+        "full": "myproject.services.myservice",
+        "short": "myserv"
+    },
+    "timestamp": {
+        "formatted": "12:00:00",
+        "raw": 1234567890.0
+    },
+    "message": "Connected to database",
+    "level": "OK"
+}
+```
+
+## Tables
+Use `Logger.table()` to display structured data in a table format:
+```py
+Logger.table() \
+    .labels(["Name", "Status", "Port"]) \
+    .row(["HTTPServer", "Running", "8100"]) \
+    .row(["WebSocket", "Disabled", "-"]) \
+    .display()
+```
+`.display()` accepts an optional log level, defaulting to `INFO`:
+```py
+.display(LogLevel.DEBUG)  # only shown when debug mode is on
+```
+
+## Tracing Exceptions
+Use `Logger.trace()` to log a full exception stacktrace:
+```py
+try:
+    do_something()
+except Exception as e:
+    Logger.trace(e)
+```
+This logs the exception type, message, file, line number, and full traceback.
+
+## Log Levels (Advanced)
+If you need to log at a specific level directly, use `Logger.log()`:
+```py
+from nautica.manager import LogLevel
+
+Logger.log("Something happened", LogLevel.INFO)
+```
+Available levels:
+| Level | Value |
+| --- | --- |
+| `LogLevel.DEBUG` | 10 |
+| `LogLevel.TRACE` | 11 |
+| `LogLevel.INFO` | 20 |
+| `LogLevel.OK` | 21 |
+| `LogLevel.WARN` | 30 |
+| `LogLevel.ERROR` | 40 |
+| `LogLevel.CRITICAL` | 41 |
+| `LogLevel.SILENT` | -999 |
+
+---
+
+# Memory Manager
+
+`MemoryManager` is a fixed-size in-memory list that automatically evicts the oldest entries when full. Nautica uses it internally for log memory, but you can use it in your own services too.
+```py
+from nautica import MemoryManager
+
+memory = MemoryManager(limit=50)  # holds up to 50 entries, default is 50
+```
+
+## Adding and Recalling Entries
+```py
+memory.Add("hello")
+memory.Add({"user": "Martin", "action": "login"})
+
+memory.Recall()       # returns all entries as a list
+memory.Recall(10)     # returns last 10 entries
+memory.Forget()       # clears all entries
+```
+`Recall()` always returns a deep copy, so modifying the result won't affect stored entries.
+
+## Validating Entries
+Use `setValidator()` to enforce a schema on entries before they're added. Raises `TypeError` if an entry fails validation:
+```py
+memory.setValidator(lambda entry: isinstance(entry, dict))
+
+memory.Add({"user": "Martin"})   # ok
+memory.Add("hello")              # raises TypeError
+```
+
+## Mirrors
+A mirror is a linked `MemoryManager` that receives all new entries added to the original. Existing entries can optionally be copied over:
+```py
+mirror = memory.CreateMirror(copy_content=True)  # copy_content defaults to True
+
+memory.Add("new entry")   # mirror also receives this
+mirror.Recall()           # includes "new entry"
+```
+Mirrors are independent, you can `Forget()` a mirror without affecting the original.
+
+## Full Example
+A service that stores the last 100 requests and exposes them:
+```py
+from nautica import Service, Logger
+from nautica.manager import MemoryManager
+
+class RequestHistory(Service):
+    def __init__(self):
+        super().__init__()
+        self.history = MemoryManager(limit=100)
+        self.history.setValidator(lambda e: isinstance(e, dict))
+
+    def onStart(self, registry):
+        Logger.ok("RequestHistory ready")
+
+    def record(self, ip: str, path: str, status: int):
+        self.history.Add({
+            "ip": ip,
+            "path": path,
+            "status": status
+        })
+
+    def recent(self, count: int = 10):
+        return self.history.Recall(count)
+
+Service.Export(RequestHistory)
+```
+Then from another service:
+```py
+def onStart(self, registry):
+    self.history = registry.Get("RequestHistory")
+
+def after_request(self, ctx):
+    self.history.record(ctx.clientIp, str(ctx.url), ctx.response.status_code)
+```
+
+---
+
+# Schedule Manager
+
+The scheduler lets you run functions at a later time, on a repeating interval, or at a specific timestamp.
+```py
+from nautica import Scheduler
+```
+
+## Running a Function Later
+Use `Scheduler.RunIn()` to run a function after a delay (in seconds):
+```py
+Scheduler.RunIn(my_function, 5)        # run in 5 seconds
+Scheduler.RunIn(my_function, 0.5)      # run in 500ms
+```
+Use `Scheduler.RunAt()` to run a function at a specific time:
+```py
+import time
+Scheduler.RunAt(my_function, time.time() + 60)  # run in 60 seconds
+```
+Both accept additional arguments to pass to the function:
+```py
+Scheduler.RunIn(send_email, 10, "myclient@example.com", subject="Pay Up")
+```
+Both sync and async functions are supported.
+
+## Repeating Intervals
+Use `Scheduler.SetInterval()` to run a function repeatedly:
+```py
+Scheduler.SetInterval(my_function, 10)  # run every 10 seconds
+```
+Or use the decorator syntax:
+```py
+@Scheduler.Interval(10)
+async def my_task():
+    Logger.info("Task ran!")
+```
+The function runs immediately on startup, then repeats every N seconds.
+
+## Inside a Service
+The scheduler is global and can be used anywhere, but the recommended place to register intervals is in `onStart()`:
+```py
+from nautica import Service, Scheduler, Logger
+
+class MyService(Service):
+    def onStart(self, registry):
+        Scheduler.SetInterval(self.tick, 30)
+
+    def tick(self):
+        Logger.info("MyService tick")
+
+Service.Export(MyService)
+```
+
+---
+
+# Package Manager
+
+The package manager allows you to install, publish and share reusable services through the Nautica Package Registry. Packages are just Nautica services, and they follow the same structure and lifecycle as any plugin you'd write yourself, but are versioned, published, and installable with a single command.
+```bash
+napi install mongodb
+```
+`napi` is just an alias for `nautica`.
+
+This downloads the package, extracts it into `plugins/`, installs any PyPI dependencies, and writes the version to the lockfile. On the next `nautica install`, the lockfile ensures the same version is restored.
+
+## project.n3
+Every package has a `project.n3` at its root, this is the package manifest. It's created automatically by `nautica package create` and contains:
+```toml
+# Name used on the registry; a-z0-9._- only
+name = "mypackage"
+
+# Package version, bump before each publish; format: https://semver.org/
+version = "1.0.0"
+
+# List of package names that are required to run this service. Use the names from the registry
+dependsOn = []
+
+# PyPI packages it depends on
+pyPackages = []
+```
+
+## package-log.n3
+When a package is installed, its name and version are written to `package-lock.n3`:
+```toml
+mongodb = "1.0.0"
+nauth = "1.0.1"
+```
+Running `nautica install` without arguments reads this file and ensures every listed package is installed at the correct version. If a version mismatch is detected, the package is re-downloaded automatically. Commit the lockfile to version control so everyone on the project gets the same package versions.
+
+## Official Packages
+Core Nautica doesn't bundle authentication or database solutions, both are available as separate first-party packages on the registry:
+- `nauth` - Authentication
+- `mongodb` - MongoDB
+- `remote-access` - Remote Access through a GUI client
+
+More packages are available on the Nautica Package Registry.
+```bash
+napi install nauth
+napi install mongodb
+napi install remote-access
+```
+
+## How Packages Work
+A package is a folder in `plugins/` with an `__init__.py` as the entry point. Nautica imports it automatically at startup, no registration needed aside from `Service.Export()` inside the package.
+```
+plugins/
+  mypackage/
+    __init__.py # entry point, must contain Service.Export()
+    project.n3  # package manifest
+```
+Regular `.py` files in `plugins/` also work for simple single-file plugins that don't need publishing.
+
+## Publishing
+See the CLI Reference for the full publishing workflow (`nautica package publish`, `nautica package registry`).
+
+---
+
+# Requirement Validators
+
+Validators define rules for incoming data. They are used in HTTP request requirements and shell command arguments to validate and reject data before it reaches your handler code.
+```py
+from napi.Require import (
+    AnyOf, AnyTypeOf, ExactMatch, RegExMatch, File, ListOf, Optional
+)
+# OR napi.http.Require
+# Source: nautica.models.Requirements
+```
+
+## Built-in Validators
+
+### `AnyOf(*options)`
+Value must be one of the provided options:
+```py
+AnyOf("list", "dict")         # accepts "list" or "dict"
+AnyOf("admin", "user", "mod") # accepts any of the three roles
+```
+
+### `AnyTypeOf(*types)`
+Value must match any of the provided types:
+```py
+AnyTypeOf(str, int)   # accepts strings or integers
+AnyTypeOf(str, None)  # accepts strings or None
+```
+
+### `ExactMatch(match)`
+Value must equal the provided value exactly:
+```py
+ExactMatch("v3")      # accepts only "v3"
+ExactMatch(42)        # accepts only 42
+```
+
+### `RegExMatch(pattern)`
+Value must match the provided regex pattern:
+```py
+RegExMatch(r"^[a-zA-Z0-9_]{3,20}$")  # alphanumeric, 3-20 chars
+RegExMatch(r"^\d{4}-\d{2}-\d{2}$")   # date format YYYY-MM-DD
+```
+
+### `File(max_size, mime)`
+File upload validation, only usable in the `files` field of `@HTTP.Require()`:
+```py
+File(max_size=File.MB(2), mime=["image/png", "image/jpeg"])
+```
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `max_size` | `int` | Maximum file size in bytes |
+| `mime` | `list[str]` | Allowed MIME types |
+
+Size helpers:
+```py
+File.KB(128)  # 128 kilobytes
+File.MB(2)    # 2 megabytes
+File.GB(1)    # 1 gigabyte
+```
+
+### `ListOf(obj, min_length, max_length)`
+All items in a list has to match the type of object.
+```py
+ListOf(str) # All items have to be a string
+ListOf(int, max_length = 10) # Only integers, 10 items max
+ListOf({"name": str, "age": int}, min_length = 5, max_length = 10) # Only dicts with 'name:str' and 'age:int'; 5-10 items
+ListOf(AnyTypeOf(str, int)) # This also works
+```
+
+### `Optional(value)`
+Returns either the data type/schema provided, or `None` if missing.
+```py
+Optional(bool) # Can be True, False or missing (None)
+Optional(str) # String or None
+Optional({"age": int}) # Dict containing 'age' (int) or None
+```
+
+## Using Validators
+
+### In HTTP Routes
+Pass validators as values in `@HTTP.Require()` instead of plain types:
+```py
+from napi.http import HTTP, Context, Reply, Require
+
+@HTTP.GET()
+@HTTP.Require(
+    query = {"format": Require.AnyOf("list", "dict")},
+    body = {"username": Require.RegExMatch(r"^[a-zA-Z0-9_]{3,20}$")},
+    files = {"avatar": Require.File(max_size=Require.File.MB(2), mime=["image/png"])}
+)
+async def example(ctx: Context):
+    ...
+```
+If validation fails, Nautica automatically returns a `422 Unprocessable Content` with details about what was missing or invalid. Your handler is never reached.
+
+### In Shell Commands
+Pass validators as argument types in `CommandRequirements`:
+```py
+from nautica.services.builtins.shell.decorator import RegisterCommand, CommandRequirements
+from nautica.models.Requirements import AnyOf
+
+@RegisterCommand(
+    "setmode",
+    "Sets the service mode",
+    args = CommandRequirements(
+        args = {"mode": AnyOf("debug", "production")}
+    )
+)
+def setmode(mode: str):
+    return f"Mode set to {mode}"
+```
+```
+> setmode debug       # valid
+> setmode invalid     # Argument <mode> does not match anyOf(debug, production)
+```
+
+## Custom Validators
+Define your own validators by extending `Requirement`:
+```py
+from nautica.models.Requirements import Requirement
+
+class MyValidator(Requirement):
+    def isValid(self, content) -> bool: # The validation logic
+        return content == "hello"
+
+    def toComponent(self) -> dict: # For OpenAPI Docs generation
+         return {
+            "type": "string",
+            "enum": ["hello"]
+        }
+
+    def __str__(self):
+        return "mustBeHello"
+```
+| Method | Required | Description |
+| --- | --- | --- |
+| `isValid(content)` | Yes | Return `True` if valid, `False` otherwise |
+| `toComponent()` | Recommended | Return `dict`, with a valid OpenAPI schema |
+| `__str__()` | Recommended | Shown in error messages when validation fails |
+
+Custom validators work anywhere a built-in validator would:
+```py
+@HTTP.Require(query = {"greeting": MyValidator()})
+```
+
+### Extending Built-in Validators
+You can extend existing validators to customize their behavior. A useful pattern is extending `AnyOf` with dynamic options, values that are only known at runtime:
+```py
+from nautica import Services
+from nautica.models.Requirements import AnyOf, Requirement
+
+class RunningServices(AnyOf):
+    def __init__(self):
+        Requirement.__init__(self)  # skip AnyOf's __init__
+
+    @property
+    def options(self):
+        return [s._getName() for s in Services.instances]
+
+    def __str__(self):
+        return "service"
+```
+`Requirement.__init__()` is called directly instead of `super().__init__()` to skip `AnyOf`'s init, which would require options upfront - since our options are dynamic and only available at runtime.
+
+Using it in a shell command:
+```py
+@RegisterCommand(
+    "restart",
+    "Restarts a service",
+    args = CommandRequirements(
+        args = {"service": RunningServices()}
+    )
+)
+def restart(service: str):
+    return f"Restarting {service}..."
+```
+```
+> restart HTTPServer   # valid
+> restart Unknown      # invalid, not a running service
+```
+Or in an HTTP route:
+```py
+@HTTP.GET()
+@HTTP.Require(
+    query = {"service": RunningServices()}
+)
+async def get_service_info(ctx: Context):
+    name = ctx.query["service"]
+    ...
+```
+
+## Reference
+| Validator | Usage | Works in |
+| --- | --- | --- |
+| `AnyOf(*options)` | Value must be one of the options | HTTP, Shell |
+| `AnyTypeOf(*types)` | Value must match one of the types | HTTP, Shell |
+| `ExactMatch(match)` | Value must equal exactly | HTTP, Shell |
+| `RegExMatch(pattern)` | Value must match regex | HTTP, Shell |
+| `File(max_size, mime)` | File upload validation | HTTP only |
+| `ListOf(obj, min_length, max_length)` | Items must match validator or type | HTTP, Shell |
+| Custom `Requirement` | Define your own rules | HTTP, Shell |
+
+---
+
+# Performance Benchmark
+
+## Results
+
+### Nautica (v3.2.0)
+- Requests/sec: `3929.3`
+- Total requests: `39293`
+- Latency avg: `2.54 ms`
+- Latency min: `0.94 ms`
+- Latency p50: `2.46 ms`
+- Latency p95: `2.88 ms`
+- Latency p99: `3.56 ms`
+- Latency max: `242.60 ms`
+
+### FastAPI (v0.133.1)
+- Requests/sec: `3154.2` (-19.7%)
+- Total requests: `31542`
+- Latency avg: `3.16 ms` (+24.4%)
+- Latency min: `1.07 ms` (+13.8%)
+- Latency p50: `3.10 ms` (+26.0%)
+- Latency p95: `3.60 ms` (+25.0%)
+- Latency p99: `4.07 ms` (+14.3%)
+- Latency max: `15.52 ms` (-94.0%)
+
+### Flask (v3.0.3)
+- Requests/sec: `76.1` (-98.1%)
+- Total requests: `761`
+- Latency avg: `134.35 ms` (+5189.4%)
+- Latency min: `1.26 ms` (+34.0%)
+- Latency p50: `242.59 ms` (+9772.0%)
+- Latency p95: `276.83 ms` (+9508.7%)
+- Latency p99: `283.07 ms` (+7851.7%)
+- Latency max: `288.62 ms` (+19.0%)
+
+### Tested on
+- CPU: R5 5600X
+- RAM: 16 GB
+- OS: Win 11
+- Uvicorn: v0.49.0
+
+```bash
+benchmark.py --url http://localhost:8100/hello --workers 10
+```
+
+### Code snippets
+
+Nautica:
+```py
+from napi.http import HTTP
+
+@HTTP.GET()
+def hello():
+    return "hello world"
+```
+with `http.logRequests` in `config.n3` disabled.
+
+FastAPI:
+```py
+from fastapi import FastAPI
+import uvicorn
+
+app = FastAPI()
+
+@app.get("/hello")
+async def hello():
+    return "hello world"
+
+uvicorn.run(app, host="0.0.0.0", port=8101)
+```
+
+Flask:
+```py
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.get("/hello")
+def hello():
+    return "hello world"
+
+app.run("0.0.0.0", 8101)
+```
+"""

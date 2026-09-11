@@ -19,13 +19,13 @@ class WebSocket(Service):
         self.registry = None
         
     def onInstall(self):
-        Config.Update("nautica", ConfigBuilder()
-            .add("http.websockets", False, "Enable support for WebSockets")
+        Config.Update("http", ConfigBuilder()
+            .add("plugins.websockets", False, "Enable support for WebSockets")
             .build()       
         )
         
     def isEnabled(self):
-        return Config("nautica")["http.websockets"] and Config("nautica")["services.http"]
+        return Config("http")["plugins.websockets"] and Config("nautica")["services.http"]
         
     def onStart(self, registry):
         for file in walkPath(getRoot("src/ws")):
@@ -115,5 +115,5 @@ class WebSocket(Service):
 Service.Export(
     WebSocket,
     srcDir = "ws",
-    depends_on = ["HTTPRouter", "HTTPServer:after", "Shell?"]
+    depends_on = ["HTTPRouter", "HTTPConfig", "HTTPServer:after", "Shell?"]
 )

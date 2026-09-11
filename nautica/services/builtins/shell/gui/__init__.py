@@ -25,7 +25,7 @@ class N3GUI(App):
     CSS = TCSS
 
     def on_mount(self) -> None:
-        theme = Config("nautica")["shell.guiTheme"]
+        theme = Config("shell")["gui.theme"]
         if theme not in ["frost", "catppuccin", "nord", "gruvbox", "tokyo-night",
                          "textual-dark", "solarized-light", "atom-one-dark", "atom-one-light"]:
             theme = "frost"
