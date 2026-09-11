@@ -1,0 +1,24 @@
+# Nautica
+
+> Nautica V3 is a backend platform for Python. It provides a managed runtime environment with a service registry, lifecycle system, CLI, and built-in HTTP/WebSocket/Shell services, so you spend less time wiring an app together and more time building it.
+
+Install with `pip install nautica`. The `nautica` CLI (aliased as `napi`) scaffolds projects (`nautica create`), installs dependencies and packages (`nautica install`), and runs the project (`nautica run`). Apps are built as `Service` subclasses with lifecycle hooks (`onInstall`, `onSetup`, `onStart`, `onClose`), registered via `Service.Export()`, and placed under `plugins/` or built directly into the project's `src/` tree. Core Nautica ships with HTTP, WebSocket, and Shell services; authentication, MongoDB, and remote-access are separate first-party packages installable from the [Nautica Package Registry](https://napm.xellu.xyz/).
+
+## Docs
+
+- [Home](https://github.com/xellu/nautica-api/wiki): Project overview, installation, and CLI quick start.
+- [CLI Reference](https://github.com/xellu/nautica-api/wiki/CLI-Reference): Full `nautica`/`napi` command reference — `create`, `install`, `uninstall`, `run`, and the `package` subcommands (`create`, `env`, `envinstall`, `envclean`, `test`, `publish`, `registry`).
+- [Service Registry](https://github.com/xellu/nautica-api/wiki/Service-Registry): The `Service` base class — lifecycle hooks (`onInstall`/`onSetup`/`onStart`/`onClose`/`isEnabled`), accessing other services via `registry`/`Services`, exporting with `Service.Export()`, and declaring dependencies (`depends_on`, optional `?`, and `:after` ordering).
+- [Builtin Services ‐ HTTP](https://github.com/xellu/nautica-api/wiki/Builtin-Services-%E2%80%90-HTTP): `napi.http` reference — file-based routing under `src/http/`, `Context`, `Reply`/`Error`, `@HTTP.Require`/`@HTTP.Responses` validation, `@HTTP.Before`/`@HTTP.After` hooks, `StatusCodes`, and CORS configuration via `config/http.toml`.
+- [Builtin Services ‐ WebSockets](https://github.com/xellu/nautica-api/wiki/Builtin-Services-%E2%80%90-WebSockets): `napi.ws` reference — file-based routing under `src/ws/`, `@WS.OnConnect`/`@WS.OnDisconnect`/`@WS.OnPacket` handlers, the persistent `WebSocketContext`, and error packets.
+- [Builtin Services ‐ Shell](https://github.com/xellu/nautica-api/wiki/Builtin-Services-%E2%80%90-Shell): Runtime admin shell — registering commands with `RegisterCommand`, typed/validated arguments via `CommandRequirements`, boolean flags, and accessing running services from a command.
+- [Config Manager](https://github.com/xellu/nautica-api/wiki/Config-Manager): TOML-backed config system — reading/writing values with dotted key paths, defining schemas with `ConfigBuilder`, `Config.New()` vs `Config.Update()`, and the built-in `nautica`/`projectdev` config keys.
+- [Log Manager](https://github.com/xellu/nautica-api/wiki/Log-Manager): `Logger` API — leveled/colored console output (`info`/`ok`/`warn`/`error`/`critical`/`debug`), automatic file logging under `.logs/`, in-memory `LogMemory.Recall()`, `Logger.table()`, and `Logger.trace()` for exceptions.
+- [Memory Manager](https://github.com/xellu/nautica-api/wiki/Memory-Manager): `MemoryManager` — a fixed-size, auto-evicting in-memory list with `Add`/`Recall`/`Forget`, entry validators, and linked "mirror" managers.
+- [Schedule Manager](https://github.com/xellu/nautica-api/wiki/Schedule-Manager): `Scheduler` API — `RunIn`/`RunAt` for delayed calls, `SetInterval`/`@Scheduler.Interval` for repeating tasks, supporting both sync and async functions.
+- [Package Manager](https://github.com/xellu/nautica-api/wiki/Package-Manager): The `napi`/`nautica` package system — the `project.n3` manifest, `package-lock.n3` lockfile, `plugins/` package layout, publishing workflow, and official packages (`nauth`, `mongodb`, `remote-access`) from the [Package Registry](https://napm.xellu.xyz/).
+- [Requirement Validators](https://github.com/xellu/nautica-api/wiki/Requirement-Validators): `napi.Require` validator library — `AnyOf`, `AnyTypeOf`, `ExactMatch`, `RegExMatch`, `File`, `ListOf`, `Optional`, and writing custom validators by extending `Requirement`. Used in both HTTP request validation and Shell command arguments.
+
+## Optional
+
+- [Performance Benchmark](https://github.com/xellu/nautica-api/wiki/Performance-Benchmark): Requests/sec and latency comparison of Nautica vs FastAPI vs Flask on a single hello-world route.
