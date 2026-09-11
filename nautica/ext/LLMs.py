@@ -1,3 +1,38 @@
+
+AGENTS = """
+# Nautica Project
+
+This project is built on Nautica V3 (`napi`/`nautica`), a Python backend framework
+with a service registry, file-based HTTP/WebSocket routing, and a plugin system.
+
+Full API reference is in `DOCS.md` - consult it before
+writing code that touches routing, validation, services, or config. Don't guess
+at the API surface; it's non-standard (not Flask/FastAPI conventions).
+
+## Setup & Run
+- Install deps: `nautica install`
+- Run the project: `nautica run`
+- Install a package: `nautica install <package>` (e.g. `nauth`, `mongodb`)
+
+## Project Structure
+- `src/http/` - HTTP routes, file-based (path = file path, `+root.py` = index)
+- `src/ws/` - WebSocket routes, same convention
+- `plugins/` - services/packages, auto-imported on start
+- `config/` - TOML configs (one per service), `config.n3` at root for core settings
+- `.logs/` - runtime logs, gitignored
+
+## Key Conventions (easy to get wrong)
+- Raise `Error`, never `return` it: `raise Error(StatusCodes.NOT_FOUND, "msg")`
+- Validate input with `@HTTP.Require(...)`, not manual checks - invalid requests
+  never reach the handler (auto 422)
+- Route handlers take `ctx: Context` as the first arg (or no args at all)
+- Services need `Service.Export(MyClass)` at module level to be registered
+- Lifecycle order: `onInstall` -> `isEnabled` -> `onSetup` -> `onStart` -> `onClose`
+- Use `Config("id")["dotted.key"]` to read config, not raw TOML parsing
+
+"""
+
+LLMS = r"""
 # Nautica
 
 > Nautica V3 is a backend platform for Python. It gives you a managed runtime environment with a service registry, lifecycle system, CLI, and built-in tools, saving you time from putting your app together and giving you more time building it.
@@ -87,7 +122,7 @@ Creates an empty Nautica3 package.
 ### package env
 Usage: `nautica package env`
 
-Creates a testing environment for your package (re-created if one already exists). The env (under `.testenv/`) is an empty nautica project under the hood — you can install dependencies, and more.
+Creates a testing environment for your package (re-created if one already exists). The env (under `.testenv/`) is an empty nautica project under the hood - you can install dependencies, and more.
 
 ### package envinstall
 Usage: `nautica package envinstall`
@@ -106,7 +141,7 @@ Clones your package into `.testenv/plugins/` and starts the testing environment.
 ### package publish
 Usage: `nautica package publish`
 
-Publishes your package to the Nautica Package Registry (napm.xellu.xyz). You may be prompted to log in. Don't forget to change the package version before publishing — duplicates aren't allowed.
+Publishes your package to the Nautica Package Registry (napm.xellu.xyz). You may be prompted to log in. Don't forget to change the package version before publishing - duplicates aren't allowed.
 
 ### package registry
 Usage: `nautica package registry [url]`
@@ -417,10 +452,10 @@ Such parameters are always either the type you define, or None, if it was not pr
 
 ### Validators
 Instead of a plain type, use a `Requirement` validator as the value:
-- `Require.AnyOf(*options)` — value must be one of the provided options: `Require.AnyOf("list", "dict")`
-- `Require.AnyTypeOf(*types)` — value must match any of the provided types: `Require.AnyTypeOf(str, int)`
-- `Require.ExactMatch(match)` — value must equal the provided value exactly: `Require.ExactMatch("v3")`
-- `Require.RegExMatch(pattern)` — value must match the provided regex pattern: `Require.RegExMatch(r"^[a-zA-Z0-9_]{3,20}$")`
+- `Require.AnyOf(*options)` - value must be one of the provided options: `Require.AnyOf("list", "dict")`
+- `Require.AnyTypeOf(*types)` - value must match any of the provided types: `Require.AnyTypeOf(str, int)`
+- `Require.ExactMatch(match)` - value must equal the provided value exactly: `Require.ExactMatch("v3")`
+- `Require.RegExMatch(pattern)` - value must match the provided regex pattern: `Require.RegExMatch(r"^[a-zA-Z0-9_]{3,20}$")`
 
 (Full validator reference below under "Requirement Validators".)
 
@@ -490,7 +525,7 @@ By enabling `strict` mode:
 )
 ...
 ```
-You'll enforce the output schema — if a malformed response is detected, the request will fail. Otherwise reply models are used for OpenAPI generation only. `dict`s, `type`s and `Requirement`s are all valid shapes for the ReplyModel.
+You'll enforce the output schema - if a malformed response is detected, the request will fail. Otherwise reply models are used for OpenAPI generation only. `dict`s, `type`s and `Requirement`s are all valid shapes for the ReplyModel.
 
 ## Before / After Hooks
 Run code before or after a specific route handler using `@HTTP.Before` and `@HTTP.After`. These are per-route only.
@@ -563,7 +598,7 @@ headers = ["*"]
 exposeHeaders = []
 credentials = false
 ```
-Per the CORS spec, `credentials = true` can't be combined with a wildcard (`"*"`) origin — set `cors.origins` to an explicit list when enabling credentials.
+Per the CORS spec, `credentials = true` can't be combined with a wildcard (`"*"`) origin - set `cors.origins` to an explicit list when enabling credentials.
 
 ## Full Example
 ```python
@@ -1266,9 +1301,9 @@ Running `nautica install` without arguments reads this file and ensures every li
 
 ## Official Packages
 Core Nautica doesn't bundle authentication or database solutions, both are available as separate first-party packages on the registry:
-- `nauth` — Authentication
-- `mongodb` — MongoDB
-- `remote-access` — Remote Access through a GUI client
+- `nauth` - Authentication
+- `mongodb` - MongoDB
+- `remote-access` - Remote Access through a GUI client
 
 More packages are available on the Nautica Package Registry.
 ```bash
@@ -1452,7 +1487,7 @@ class RunningServices(AnyOf):
     def __str__(self):
         return "service"
 ```
-`Requirement.__init__()` is called directly instead of `super().__init__()` to skip `AnyOf`'s init, which would require options upfront — since our options are dynamic and only available at runtime.
+`Requirement.__init__()` is called directly instead of `super().__init__()` to skip `AnyOf`'s init, which would require options upfront - since our options are dynamic and only available at runtime.
 
 Using it in a shell command:
 ```py
@@ -1576,3 +1611,4 @@ def hello():
 
 app.run("0.0.0.0", 8101)
 ```
+"""
