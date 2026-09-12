@@ -248,7 +248,7 @@ class Middleware:
             #construct
             try:
                 ctx.response = self.constructResponse( ctx.response )
-            except:
+            except Exception as e:
                 return self.constructResponse(
                     ErrorReply(
                         errorMessage  = "Failed to construct a response for your request",
