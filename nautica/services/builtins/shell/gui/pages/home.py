@@ -35,7 +35,7 @@ class HomePage(Container):
         
     def on_mount(self):
         self.mirror = LogMemory.CreateMirror()
-        self.autoScroll = Config("shell-gui")("home.logScroll")
+        self.autoScroll = Config("shell")("gui.home.logScroll")
         
         #logs
         # self.query_one("#log-input", Input).focus()
@@ -47,8 +47,8 @@ class HomePage(Container):
         self.query_one("#threads", DataTable).add_columns("Name", "Func", "Module")
         async_cols = self.query_one("#threadsAsync", DataTable).add_columns("Func", "Module", "Count")
         self._async_count_col = async_cols[2]
-        self.query_one("#thread-container").styles.display = "block" if Config("shell-gui")["home.threadList"] else "none"
-        self.query_one("#home-threads", Checkbox).value = Config("shell-gui")["home.threadList"]
+        self.query_one("#thread-container").styles.display = "block" if Config("shell")["gui.home.threadList"] else "none"
+        self.query_one("#home-threads", Checkbox).value = Config("shell")["gui.home.threadList"]
         
         self.set_interval(0.25, self.refresh_logs)
         self.set_interval(1, self.refresh_threads)
@@ -156,12 +156,12 @@ class HomePage(Container):
     @on(Checkbox.Changed, "#log-autoscroll")
     def handle_autoscroll(self, event: Checkbox.Changed):
         self.autoScroll = event.checkbox.value
-        Config("shell-gui")["home.logScroll"] = self.autoScroll
+        Config("shell")["gui.home.logScroll"] = self.autoScroll
         
     @on(Checkbox.Changed, "#home-threads")
     def handle_threads_toggle(self, event: Checkbox.Changed):
         self.query_one("#thread-container").styles.display = "block" if event.value else "none"
-        Config("shell-gui")["home.threadList"] = event.value
+        Config("shell")["gui.home.threadList"] = event.value
         
     @on(Input.Submitted, "#cmd-input")
     async def handle_run_command(self, event: Input.Submitted):
