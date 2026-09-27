@@ -8,6 +8,7 @@ from zipfile import ZipFile
 from platformdirs import user_data_dir
 
 from ..manager import Logger, Config, ConfigBuilder
+from ..manager.config import SubConfig
 from ..services import Registry
 from ..ext.Util import walkPath, rmDir, isGitIgnored, filterPathsGitIgnore
 from ..ext.Static import PackageServiceExample, GitIgnore
@@ -15,6 +16,7 @@ from ..ext.StatusCodes import getMessage
 from ..ext.Path import setRoot, getRoot
 
 from ..ext.PackageManager import prompt_login, login, get_all_regs, set_reg_url, get_reg_url
+from ..ext.PackageUtils import parsePackageName
 
 
 def is_valid_name(name: str):
@@ -76,34 +78,81 @@ def create(name: str):
 @package.command()
 def env():
     from .Create import _create
+    origin_path = os.path.abspath(".")
     
     if ".testenv" in os.listdir("."): #delete old env
         Logger.info("Recreating the test environment...")
         rmDir(".testenv")
-    
+
     #create env
     _create(".testenv")
     Logger.table() \
-        .labels(["Test Environment Created! To run it:"]) \
+        .labels(["Test Environment Created!"]) \
+        .row(["To install it:"]) \
+        .row(["nautica package envinstall"]) \
+        .row([""]).row(["To run it:"]) \
         .row(["nautica package test"]).display()
+
+    #create package-lock
+    setRoot(origin_path)
+    
+    cfg = SubConfig(getRoot("project.n3"), ConfigBuilder().build())    
+    installed_packages = cfg.get("dependsOn")
+
+    setRoot(os.path.join(origin_path, ".testenv"))
+    for p in installed_packages:
+        package = parsePackageName(p)
+        v = package.getVersion() if package.version == "latest" else package.version
+
+        lock = SubConfig(getRoot("package-lock.n3"), ConfigBuilder().build())
+        lock.set(package.name, str(v))  
         
 @package.command()
-def envinstall():
+@click.argument("packages", nargs=-1, required=False)
+@click.option("--trace", "-t", is_flag=True)
+def envinstall(packages: list | None = None, trace: bool = False):
     from .Install import _install
     
     #project checks
     if ".testenv" not in os.listdir("."):
         Logger.error("No test environment found. Run 'nautica package env' to create one.")
         return
-    
-    #install
-    
-    setRoot(".testenv")
-    _install(trace=True)
+
+    #used for updating packages in project.n3
+    project_cfg = SubConfig(getRoot("project.n3"), ConfigBuilder().build())    
+    project_packages = project_cfg.get("dependsOn")
+
+    #install    
+    origin_path = os.path.abspath(".")
+    setRoot(os.path.join(origin_path, ".testenv"))
+    _install(packages, trace)
+
     
     Logger.table() \
         .labels(["Test Environment Installed! To run it:"]) \
         .row(["nautica package test"]).display()
+
+    if not packages: return
+
+    for p in packages:
+        p = parsePackageName(p)
+
+        found = False
+        for i, pj_p in enumerate(project_packages):
+            pj_p = parsePackageName(pj_p)
+
+            if pj_p.isVersionOf(p):
+                version = p.getVersion() if p.version == "latest" else p.version
+                project_packages[i] = f"{p.name}=={version}"
+                found = True
+                break
+
+        if not found:
+            version = p.getVersion() if p.version == "latest" else p.version
+            project_packages.append(f"{p.name}=={version}")
+
+        project_cfg.set("dependsOn", project_packages)
+                        
     
 @package.command()
 def envclean():
