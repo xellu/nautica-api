@@ -10,11 +10,11 @@ from ..manager.config import ROOT_CONFIGS, SubConfig
 from ..models.Package import PackageRelease
 
 from ..services import Registry
-from ..ext.PackageUtils import downloadPackage, downloadPackageFromString, removePackage
+from ..ext.PackageUtils import downloadPackage, downloadPackageFromString, removePackage, InstallSession
 
-def installPlugin(package: str | PackageRelease, trace = False):
+def installPlugin(package: str | PackageRelease, trace = False, session: InstallSession | None = None):
     try:
-        p = downloadPackageFromString(package) if isinstance(package, str) else downloadPackage(package)
+        p = downloadPackageFromString(package, session) if isinstance(package, str) else downloadPackage(package, session)
     except Exception as e:
         if trace: Logger.trace(e)
         Logger.critical(f"Package failed to download: {e}")
@@ -28,9 +28,11 @@ def install(packages: list | None = None, trace: bool = False):
     _install(packages, trace)
 
 def _install(packages: list | None = None, trace: bool = False):
+    session = InstallSession().seed() #shared so dependencies resolve to compatible versions
+    
     #install specified packages-----------
     for package in packages or []:
-        installPlugin(package, trace)
+        installPlugin(package, trace, session)
     
     if packages:
         try:
@@ -60,7 +62,7 @@ def _install(packages: list | None = None, trace: bool = False):
     for name, ver in Config("lock").items():
         if not os.path.exists(getRoot("plugins", name, "project.n3")):
             #install plugin
-            installPlugin(PackageRelease(name, ver))
+            installPlugin(PackageRelease(name, ver), session=session)
             continue
         
         #check version
@@ -69,7 +71,7 @@ def _install(packages: list | None = None, trace: bool = False):
         
         if ver != installedVer:
             Logger.warn(f"Version mismatch for {name}. Lock={ver}, Installed={installedVer}. Re-installing...")
-            installPlugin(PackageRelease(name, ver))
+            installPlugin(PackageRelease(name, ver), session=session)
     
     #install services
     Logger.info("Installing services...")

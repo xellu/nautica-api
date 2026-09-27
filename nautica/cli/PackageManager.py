@@ -102,7 +102,7 @@ def env():
     setRoot(os.path.join(origin_path, ".testenv"))
     for p in installed_packages:
         package = parsePackageName(p)
-        v = package.getVersion() if package.version == "latest" else package.version
+        v = package.resolveVersion()
 
         lock = SubConfig(getRoot("package-lock.n3"), ConfigBuilder().build())
         lock.set(package.name, str(v))  
@@ -137,19 +137,15 @@ def envinstall(packages: list | None = None, trace: bool = False):
     for p in packages:
         p = parsePackageName(p)
 
-        found = False
+        #keep explicit specifiers, default to >= latest
+        entry = f"{p.name}>={p.getVersion()}" if p.version == "latest" else str(p)
+
         for i, pj_p in enumerate(project_packages):
-            pj_p = parsePackageName(pj_p)
-
-            if pj_p.isVersionOf(p):
-                version = p.getVersion() if p.version == "latest" else p.version
-                project_packages[i] = f"{p.name}=={version}"
-                found = True
+            if parsePackageName(pj_p).isVersionOf(p):
+                project_packages[i] = entry
                 break
-
-        if not found:
-            version = p.getVersion() if p.version == "latest" else p.version
-            project_packages.append(f"{p.name}=={version}")
+        else:
+            project_packages.append(entry)
 
         project_cfg.set("dependsOn", project_packages)
                         
