@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nautica"
-version = "3.3.1"
+dynamic = ["version"]
 description = "A service management framework"
 license = {text = "MIT"}
 authors = [
@@ -46,10 +46,13 @@ classifiers = [
 where = ["."]
 include = ["nautica*", "napi*"]
 
+
+[tool.setuptools.dynamic]
+version = {attr = "nautica.ext.Static.RELEASE"}
+
 [project.scripts]
 nautica = "nautica.__main__:cli"
 napi = "nautica.__main__:cli"
-
 
 [project.urls]
 Homepage = "https://github.com/xellu/nautica-api"
