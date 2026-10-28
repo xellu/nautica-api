@@ -25,7 +25,7 @@ class WebSocket(Service):
         )
         
     def isEnabled(self):
-        return Config("http")["plugins.websockets"] and Config("nautica")["services.http"]
+        return Config("http")["plugins.websockets"]
         
     def onStart(self, registry):
         for file in walkPath(getRoot("src/ws")):

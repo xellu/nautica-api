@@ -30,7 +30,7 @@ class OpenAPIGenerator(Service):
         )
     
     def isEnabled(self):
-        return Config("nautica")["services.http"]
+        return Config("http")["openapi.enabled"]
     
     def onSetup(self, registry):
         if not registry.get("Shell"): return
