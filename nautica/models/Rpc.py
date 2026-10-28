@@ -4,8 +4,10 @@ class RPCArg:
         self.type = _type
 
 class RPCFunc:
-    def __init__(self, name: str, args: list[RPCArg], kwargs: list[RPCArg]):
+    def __init__(self, name: str, args: list[RPCArg], kwargs: list[RPCArg], type_hint: type):
         self.name = name
+        self.type_hint = type_hint
+
         self.args = args
         self.kwargs = kwargs
 
