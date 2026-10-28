@@ -21,16 +21,17 @@ class OpenAPIGenerator(Service):
         #         .build()        
         # )
         
-        Config.New("openapi", 
+        Config.Update("http", 
             ConfigBuilder() \
-                .add("info.title", "Nautica API", "The name to show in the docs") \
-                .add("info.version", "1.0.0", "Version of your API") \
-                .add("servers", [{"url": "http://127.0.0.1", "description": "Development"}], "API Host; replace with your IP/Domain")
+                .add("openapi.path", "/path/to/file.yaml", comment="Relative path to save OpenAPI yaml doc to")
+                .add("openapi.title", "Nautica API", "The name to show in the docs") \
+                .add("openapi.version", "1.0.0", "Version of your API") \
+                .add("openapi.servers", [{"url": "http://127.0.0.1", "description": "Development"}], "API Host; replace with your IP/Domain")
                 .build()     
         )
     
     def isEnabled(self):
-        return Config("nautica")["services.http"]
+        return Config("http")["plugins.openapi"]
     
     def onSetup(self, registry):
         if not registry.get("Shell"): return
@@ -54,7 +55,7 @@ class OpenAPIGenerator(Service):
             Logger.ok("Docs saved to 'openapi.yaml'")
         
     def onStart(self, registry):
-        if not Config("http")["openapi.enabled"]:
+        if not Config("http")["plugins.openapi"]:
             return
         
         self.createDocs()
@@ -65,10 +66,10 @@ class OpenAPIGenerator(Service):
         docs = {
             "openapi": "3.1.0",
             "info": {
-                "title": str(Config("openapi")["info.title"]),
-                "version": str(Config("openapi")["info.version"]),
+                "title": str(Config("http")["openapi.title"]),
+                "version": str(Config("http")["openapi.version"]),
             },
-            "servers": unwrapToml(Config("openapi")["servers"]),
+            "servers": unwrapToml(Config("http")["openapi.servers"]),
             "paths": {}
         }
         

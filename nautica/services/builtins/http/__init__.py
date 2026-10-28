@@ -23,15 +23,14 @@ class HTTPConfig(Service):
                 .add("request.realIPHeader", "", comment="Name of the header which has the real ip, e.g. X-Real-IP, CF-Connecting-IP (if behind proxy), set to empty to use requesting machine's IP instead")
                 .add("request.logSuccessful", True, comment="Logs all successful requests. If disabled, only error requests are displayed, and boosts performance.")
                 .add("request.includeSchema", True, comment="If enabled, will include the request schema in error replies")
+
+                #plugins
+                .add("plugins.openapi", False, comment="Auto-Generate OpenAPI documentation on start")
                 
                 #static files
                 .add("static.enabled", False, comment="Set to true if you wish to send static files from a directory")
                 .add("static.endpoint", "/static", comment="Endpoint by which the static directory will be reached")
                 .add("static.directory", "/path/to/directory", comment="Files in this directory will be accessible by sending a GET request to endpoint above")
-                
-                #openapi
-                .add("openapi.enabled", False, comment="Auto-generate OpenAPI documentation on start")
-                .add("openapi.path", "/path/to/file.yaml", comment="Relative path to save OpenAPI yaml doc to")
 
                 #cors
                 .add("cors.enabled", False, comment="Enable Cross-Origin Resource Sharing (refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS)")
@@ -40,6 +39,7 @@ class HTTPConfig(Service):
                 .add("cors.headers", ["*"], comment="List of allowed headers (Access-Control-Request-Headers)")
                 .add("cors.exposeHeaders", [], comment="List of exposed headers")
                 .add("cors.credentials", False, comment="Allow cookies and auth headers (Authorization) to be sent with cross-origin requests")
+                
                 .build()
         )
         
