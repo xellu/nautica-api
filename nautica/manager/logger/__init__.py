@@ -98,6 +98,8 @@ class LogManager:
 
             if level.value >= self.level.value:
                 formatted = message.replace("//", f"{Fore.LIGHTBLACK_EX}//")
+                formatted = formatted.replace("[ONLINE]", f"{Fore.GREEN}ONLINE{Fore.RESET}")
+                formatted = formatted.replace("[OFFLINE]", f"{Fore.RED}OFFLINE{Fore.RESET}")
                 
                 print(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{formatted}{Fore.RESET}", *args)
                 # LogMemory.Add(f"{Fore.LIGHTBLACK_EX}({short_timestamp}){Fore.RESET} {color_tag}[{short_name.upper()}/{level.name.upper()}]{Fore.RESET} {color_msg}{message}{Fore.RESET}")

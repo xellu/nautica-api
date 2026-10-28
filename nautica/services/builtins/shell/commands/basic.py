@@ -3,6 +3,7 @@ from .....services import Services
 from .....manager import Logger, Config
 from .....models.Requirements import AnyOf, Requirement
 
+import colorama
 import os
 
 class ManualAutoOptions(AnyOf):
@@ -92,12 +93,22 @@ def useGui(value: bool):
     Logger.ok(f"Switched to {'GUI' if value else 'Terminal'}, restart for changes to take effect.")
   
 @RegisterCommand(
-    "lsserv", "Lists all services"
+    "lsserv", "Lists all services",
+    CommandRequirements(
+        flags = ["installOrder", "bootOrder"]
+    )
 )
-def listServices():
-    Logger.info("Showing all services:")
-    for s in Services.instances:
-        Logger.info(f" * {s._getName()} {'ENABLED' if s.isEnabled() else 'OFFLINE'}")
+def listServices(installOrder: bool = False, bootOrder: bool = False):
+    order = (Services.instances, "Default Order")
+
+    if installOrder:
+        order = (Services._prioritize(sorted(Services.instances, key=lambda s: s._getName())), "Install Order")
+    elif bootOrder:
+        order = (Services._topoSort(Services._prioritize(Services.instances)), "Boot Order")
+
+    Logger.info(f"Showing all {len(order[0])} services ({order[1]}):")
+    for s in order[0]:
+        Logger.info(f" * {s._getName()} {'[ONLINE]' if s.isEnabled() else f'[OFFLINE]'}")
 
 @RegisterCommand("ram", "Shows ram usage")
 def ramUsage():

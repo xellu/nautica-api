@@ -95,7 +95,8 @@ class ServiceRegistryManager:
         return sorted(queue, key=lambda s: 0 if s._getName() == "System" else 1)
 
     def onInstall(self):
-        for serv in self._prioritize(self.startQueue):
+        queue = sorted(self.startQueue, key=lambda s: s._getName())
+        for serv in self._prioritize(queue):
             try:
                 serv.isEnabled()
                 serv.onInstall()

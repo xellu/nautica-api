@@ -1,8 +1,8 @@
 from nautica.models.Rpc import RPCNamespace, RPCFunc, RPCArg
-from nautica.manager import Logger
+# from nautica.manager import Logger
 
 import inspect
-from typing import get_type_hints
+from typing import Any, get_type_hints
 
 class NamespaceManager:
     def __init__(self):
@@ -12,18 +12,22 @@ class NamespaceManager:
         def decorator(func):
             if not self.namespace: raise RuntimeError("RPC Namespace not set")
 
+            hints = get_type_hints(func)
+
             args = []
             kwargs = []
 
             for p in inspect.signature(func).parameters.values():
-                Logger.info(f"{p.name}, {p.kind}, {p.annotation}, {p.default}")    
-                 
+                if p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD):
+                    raise TypeError(f"RPC function '{func.__name__}' cannot use *args/**kwargs ('{p.name}')")
 
-            #TODO: figure out how to extract input args, etc. correctly
-            Logger.info(get_type_hints(func))
+                arg = RPCArg(p.name, hints.get(p.name, Any), p.default if p.default != inspect._empty else None)
 
-            self.namespace.funcs.append(func)
-            
+                if p.kind == p.KEYWORD_ONLY or p.default is not p.empty: kwargs.append(arg)
+                else: args.append(arg)
+
+            self.namespace.addFunction(RPCFunc(func, func.__name__, args, kwargs, hints.get("return", Any)))
+
             return func
 
         return decorator
