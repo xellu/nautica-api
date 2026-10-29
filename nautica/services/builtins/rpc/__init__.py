@@ -75,9 +75,14 @@ class RPC(Service):
             return
 
         out = getRoot(path)
-        with open(out, "w", encoding="utf-8") as f:
-            f.write(generator(self.namespaces))
-        Logger.ok(f"Generated {lang} RPC client at '{out}'")
+        try:
+            with open(out, "w", encoding="utf-8") as f:
+                f.write(generator(self.namespaces))
+        except Exception as e:
+            Logger.trace(e)
+        else:
+            Logger.ok(f"Generated {lang} RPC client at '{out}'")
+
 
     def onStart(self, registry):
         #import rpc functions
@@ -103,7 +108,7 @@ class RPC(Service):
         ws.routes.append(self.router)
 
         for file in Config("http")["rpc.generateTo"]:
-            self.generate_client(getRoot(file))
+            self.generate_client(file)
 
     async def _remoteCall(self, ctx: WebSocketContext, data: dict):
         ref = data.get("ref")
