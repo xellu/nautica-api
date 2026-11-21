@@ -14,10 +14,13 @@ import inspect
 
 class Middleware:
     def __init__(self, manager, method: str, name: str | None):
+        from .router import HTTPRouter
+
         self.manager = manager
 
         self.method = method
         self.name = name
+        self.router: HTTPRouter = None
 
     @staticmethod
     def handleReply(reply: Reply, status_code: int = 200) -> JSONResponse:
@@ -173,8 +176,10 @@ class Middleware:
                 )
                 
             ctx = RequestContext(request)
+            if self.router is None:
+                self.router = Services.get("HTTPRouter")
             
-            route: InFlightRouteData = Services.get("HTTPRouter").getByFunc(wrapper)
+            route: InFlightRouteData = self.router.getByFunc(wrapper)
             if not route: Logger.error(f"Route data for function '{wrapper.__name__}' was not found")
             else:
                 #process requirements
@@ -197,7 +202,7 @@ class Middleware:
                 ctx.clientIp = request.headers.get(Config("http")["request.realIPHeader"])
     
             #run before request handlers
-            for handler in route.getBeforeHandlers():
+            for handler in self.router.before_all_handlers + route.getBeforeHandlers():
                 try:
                     result = await self.run_handler(handler, request, ctx)
                     if result is not None:
@@ -210,8 +215,8 @@ class Middleware:
             try:
                 ctx.response = await self.run_handler(original, request, ctx)
             except ErrorReply as e:
-                self.log_response(ctx, e.status_code)
-                return self.handleReply(e.toReply(), e.status_code)
+                ctx.response = self.handleReply(e.toReply(), e.status_code)
+                # self.log_response(ctx, e.status_code)
             except Exception as e:
                 Logger.trace(e)
                 self.log_response(ctx, INTERNAL_SERVER_ERROR)
@@ -242,12 +247,12 @@ class Middleware:
             
             
             #run after request handlers
-            for handler in route.getAfterHandlers():
+            for handler in self.router.after_all_handlers + route.getAfterHandlers():
                 await self.run_handler(handler, request, ctx)
             
             #construct
             try:
-                ctx.response = self.constructResponse( ctx.response )
+                ctx.response = self.constructResponse( ctx.response, status_code=ctx.response.status_code )
             except Exception as e:
                 return self.constructResponse(
                     ErrorReply(

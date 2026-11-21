@@ -15,6 +15,10 @@ class HTTPRouter(Service):
         self.routes_path: dict[str, InFlightRouteData] = {} #path: data
         self.routes_func: dict[function, InFlightRouteData] = {} #func: data
 
+        self.before_all_handlers: list[callable] = []
+        self.after_all_handlers: list[callable] = []
+                        
+
     def pathToRoute(self, path):
         path = path.replace(".py", "").replace(getRoot("src/http").replace("\\", "/"), "")
         path = path.replace("\\", "/")
@@ -60,7 +64,9 @@ class HTTPRouter(Service):
 
             _HTTPRouter.temp = [] 
             imported += 1
-        
+
+        self.before_all_handlers = _HTTPRouter._beforeAll
+        self.after_all_handlers = _HTTPRouter._afterAll
         Logger.info(f"Processed {imported} files, registered {len(self.routes_path.keys())} endpoints")
         
 Service.Export(HTTPRouter, srcDir = "http", depends_on=["HTTPConfig"])

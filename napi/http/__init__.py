@@ -14,7 +14,10 @@ Error = ErrorReply
 class RouteManager:
     def __init__(self):
         self.temp = []
-        
+
+        self._beforeAll = []
+        self._afterAll = []
+
     def _create(self, r):
         self.temp.append(r)
         Logger.debug(f"Registered route for {r.func.__name__}, {r.method=}, {r.name=}")
@@ -153,6 +156,12 @@ class RouteManager:
             return func
         return decorator
 
+    def BeforeAll(self):
+        def decorator(func):
+            self._beforeAll.append(func)
+            return func
+        return decorator
+
     def After(self, fn):
         """
         Register an after-hook for a route.
@@ -167,7 +176,13 @@ class RouteManager:
             return func
         return decorator
 
-    
+    def AfterAll(self):
+        def decorator(func):
+            self._afterAll.append(func)
+            return func
+        return decorator
+
+
     
         
 
